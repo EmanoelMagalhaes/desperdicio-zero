@@ -1,0 +1,133 @@
+import { addDays } from '../utils/date';
+
+export const STORAGE_KEY = 'desperdicio-zero-v4';
+
+export const defaultState = {
+  clientAccounts: [
+    {
+      id: 'cliente-demo',
+      role: 'client',
+      name: 'Restaurante Sabor da Casa',
+      email: 'cliente@desperdiciozero.com',
+      password: '123456',
+      businessType: 'Restaurante',
+    },
+    {
+      id: 'cliente-demo-2',
+      role: 'client',
+      name: 'Cafeteria Aroma Viva',
+      email: 'cafeteria@desperdiciozero.com',
+      password: '123456',
+      businessType: 'Cafeteria',
+    },
+  ],
+  adminAccounts: [
+    {
+      id: 'admin-demo',
+      role: 'admin',
+      name: 'Administrador do Sistema',
+      email: 'admin@desperdiciozero.com',
+      password: 'admin123',
+    },
+  ],
+  inventories: {
+    'cliente-demo': [
+      {
+        id: 'i1',
+        name: 'Tomate',
+        category: 'Hortifruti',
+        quantity: '12 kg',
+        expiry: addDays(1),
+        notes: 'Usar em saladas e molho',
+      },
+      {
+        id: 'i2',
+        name: 'Queijo ralado',
+        category: 'Laticinios',
+        quantity: '4 pacotes',
+        expiry: addDays(5),
+        notes: 'Estoque acima do ideal',
+      },
+      {
+        id: 'i3',
+        name: 'Pao frances',
+        category: 'Padaria',
+        quantity: '28 unidades',
+        expiry: addDays(0),
+        notes: 'Criar combo promocional hoje',
+      },
+      {
+        id: 'i4',
+        name: 'Frango desfiado',
+        category: 'Congelados',
+        quantity: '6 kg',
+        expiry: addDays(2),
+        notes: 'Otimo para recheios, escondidinho e pratos executivos',
+      },
+      {
+        id: 'i5',
+        name: 'Arroz cozido',
+        category: 'Secos',
+        quantity: '3 cubas',
+        expiry: addDays(1),
+        notes: 'Reaproveitar em arroz cremoso ou bolinho',
+      },
+      {
+        id: 'i6',
+        name: 'Alface',
+        category: 'Hortifruti',
+        quantity: '18 unidades',
+        expiry: addDays(2),
+        notes: 'Priorizar nas saladas promocionais',
+      },
+    ],
+    'cliente-demo-2': [
+      {
+        id: 'i7',
+        name: 'Leite integral',
+        category: 'Laticinios',
+        quantity: '10 litros',
+        expiry: addDays(2),
+        notes: 'Priorizar em bebidas e sobremesas',
+      },
+      {
+        id: 'i8',
+        name: 'Pao de forma',
+        category: 'Padaria',
+        quantity: '14 pacotes',
+        expiry: addDays(1),
+        notes: 'Montar sanduiches promocionais',
+      },
+    ],
+  },
+  shoppingLists: {
+    'cliente-demo': [
+      { id: 's1', name: 'Alface', amount: '10 unidades', priority: 'Alta', checked: false },
+      { id: 's2', name: 'Molho de tomate', amount: '6 saches', priority: 'Media', checked: true },
+      { id: 's3', name: 'Cebola', amount: '8 kg', priority: 'Alta', checked: false },
+      { id: 's4', name: 'Creme de leite', amount: '12 caixas', priority: 'Baixa', checked: false },
+    ],
+    'cliente-demo-2': [
+      { id: 's5', name: 'Cafe em graos', amount: '5 kg', priority: 'Alta', checked: false },
+      { id: 's6', name: 'Chocolate', amount: '8 barras', priority: 'Media', checked: false },
+    ],
+  },
+  challenges: {
+    'cliente-demo': {
+      completed: ['Registrar estoque da semana'],
+      current: [
+        'Reduzir desperdicio dos pereciveis em 20%',
+        'Criar 1 prato promocional com itens criticos',
+        'Revisar compras da proxima semana',
+      ],
+    },
+    'cliente-demo-2': {
+      completed: [],
+      current: [
+        'Criar uma vitrine com produtos de giro rapido',
+        'Reduzir perdas de laticinios na semana',
+        'Revisar compras da cafeteria antes do fim do mes',
+      ],
+    },
+  },
+};

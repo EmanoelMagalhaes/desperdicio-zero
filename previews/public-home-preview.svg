@@ -1,0 +1,54 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="900" viewBox="0 0 1440 900">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0a0f0d"/>
+      <stop offset="100%" stop-color="#111827"/>
+    </linearGradient>
+    <linearGradient id="hero" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#10b981" stop-opacity="0.25"/>
+      <stop offset="100%" stop-color="#f59e0b" stop-opacity="0.18"/>
+    </linearGradient>
+  </defs>
+  <rect width="1440" height="900" fill="url(#bg)"/>
+  <rect x="40" y="24" width="1360" height="72" rx="18" fill="#0f172a" stroke="#334155"/>
+  <text x="70" y="68" fill="#e5e7eb" font-family="Segoe UI" font-size="28" font-weight="700">Desperdicio Zero</text>
+  <text x="70" y="88" fill="#6ee7b7" font-family="Segoe UI" font-size="14">Cozinha Inteligente</text>
+  <rect x="1160" y="40" width="96" height="40" rx="12" fill="#111827" stroke="#4b5563"/>
+  <text x="1190" y="66" fill="#d1d5db" font-family="Segoe UI" font-size="14">Entrar</text>
+  <rect x="1270" y="40" width="110" height="40" rx="12" fill="#10b981"/>
+  <text x="1290" y="66" fill="#06281f" font-family="Segoe UI" font-size="14" font-weight="700">Cadastrar</text>
+
+  <rect x="40" y="120" width="1360" height="330" rx="30" fill="#111827" stroke="#334155"/>
+  <rect x="40" y="120" width="1360" height="330" rx="30" fill="url(#hero)"/>
+  <text x="84" y="190" fill="#6ee7b7" font-family="Segoe UI" font-size="14">Explore o sistema antes de criar sua conta</text>
+  <text x="84" y="250" fill="#f3f4f6" font-family="Segoe UI" font-size="52" font-weight="800">Reduza desperdicio com</text>
+  <text x="84" y="305" fill="#34d399" font-family="Segoe UI" font-size="52" font-weight="800">Cozinha Inteligente</text>
+  <text x="84" y="350" fill="#cbd5e1" font-family="Segoe UI" font-size="20">Demo publica com estoque, compras, receitas e desafios</text>
+  <rect x="84" y="378" width="220" height="48" rx="14" fill="#10b981"/>
+  <text x="115" y="409" fill="#06281f" font-family="Segoe UI" font-size="16" font-weight="700">Criar conta</text>
+
+  <rect x="860" y="170" width="500" height="250" rx="24" fill="#0b1220" stroke="#334155"/>
+  <text x="895" y="208" fill="#e5e7eb" font-family="Segoe UI" font-size="24" font-weight="700">Resumo da demonstracao</text>
+  <rect x="895" y="228" width="205" height="72" rx="14" fill="#111827" stroke="#334155"/>
+  <rect x="1120" y="228" width="205" height="72" rx="14" fill="#111827" stroke="#334155"/>
+  <rect x="895" y="316" width="205" height="72" rx="14" fill="#111827" stroke="#334155"/>
+  <rect x="1120" y="316" width="205" height="72" rx="14" fill="#111827" stroke="#334155"/>
+  <text x="915" y="257" fill="#a7f3d0" font-family="Segoe UI" font-size="13">Produtos</text>
+  <text x="915" y="284" fill="#ecfeff" font-family="Segoe UI" font-size="28" font-weight="700">6</text>
+  <text x="1140" y="257" fill="#fecaca" font-family="Segoe UI" font-size="13">Itens criticos</text>
+  <text x="1140" y="284" fill="#ecfeff" font-family="Segoe UI" font-size="28" font-weight="700">4</text>
+  <text x="915" y="345" fill="#bfdbfe" font-family="Segoe UI" font-size="13">Receitas</text>
+  <text x="915" y="372" fill="#ecfeff" font-family="Segoe UI" font-size="28" font-weight="700">3</text>
+  <text x="1140" y="345" fill="#fde68a" font-family="Segoe UI" font-size="13">Lista compras</text>
+  <text x="1140" y="372" fill="#ecfeff" font-family="Segoe UI" font-size="28" font-weight="700">4</text>
+
+  <rect x="40" y="480" width="1360" height="360" rx="30" fill="#0f172a" stroke="#334155"/>
+  <rect x="70" y="520" width="260" height="280" rx="20" fill="#111827" stroke="#334155"/>
+  <rect x="360" y="520" width="260" height="280" rx="20" fill="#111827" stroke="#334155"/>
+  <rect x="650" y="520" width="260" height="280" rx="20" fill="#111827" stroke="#334155"/>
+  <rect x="940" y="520" width="430" height="280" rx="20" fill="#111827" stroke="#334155"/>
+  <text x="100" y="560" fill="#f3f4f6" font-family="Segoe UI" font-size="20" font-weight="700">DemoKitchen</text>
+  <text x="390" y="560" fill="#f3f4f6" font-family="Segoe UI" font-size="20" font-weight="700">DemoShopping</text>
+  <text x="680" y="560" fill="#f3f4f6" font-family="Segoe UI" font-size="20" font-weight="700">DemoRecipes</text>
+  <text x="970" y="560" fill="#f3f4f6" font-family="Segoe UI" font-size="20" font-weight="700">Navegacao demo ativa</text>
+</svg>
