@@ -12,12 +12,17 @@ const initialForm = {
 export default function RegisterPage() {
   const [form, setForm] = useState(initialForm);
   const [message, setMessage] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  const { register } = useAppStore();
+  const { register, backendMode } = useAppStore();
   const navigate = useNavigate();
 
-  function handleSubmit() {
-    const result = register(form);
+  async function handleSubmit() {
+    setLoading(true);
+    setMessage('');
+
+    const result = await register(form);
+    setLoading(false);
 
     if (!result.ok) {
       setMessage(result.error);
@@ -32,7 +37,7 @@ export default function RegisterPage() {
       <div className="text-sm uppercase tracking-[0.22em] text-emerald-300">Cadastro de cliente</div>
       <h1 className="mt-3 text-4xl font-black">Crie sua conta para comecar a operar</h1>
       <p className="mt-3 text-white/70">
-        O cadastro inicial continua local no MVP e ja prepara o fluxo para migracao futura com backend real.
+        Modo atual: {backendMode === 'firebase' ? 'Firebase (conta real)' : 'LocalStorage (modo local)'}.
       </p>
 
       <div className="mt-8 space-y-4">
@@ -73,9 +78,10 @@ export default function RegisterPage() {
 
         <button
           onClick={handleSubmit}
-          className="w-full rounded-2xl bg-emerald-500 px-5 py-3 font-semibold text-neutral-950 transition hover:scale-[1.01]"
+          disabled={loading}
+          className="w-full rounded-2xl bg-emerald-500 px-5 py-3 font-semibold text-neutral-950 transition hover:scale-[1.01] disabled:opacity-60"
         >
-          Criar conta e entrar
+          {loading ? 'Criando conta...' : 'Criar conta e entrar'}
         </button>
       </div>
 

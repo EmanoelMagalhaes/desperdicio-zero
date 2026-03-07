@@ -1,4 +1,4 @@
-const provider = import.meta.env.VITE_BACKEND_PROVIDER || 'local';
+const provider = (import.meta.env.VITE_BACKEND_PROVIDER || 'local').toLowerCase();
 
 export const backendAdapter = {
   provider,
@@ -7,12 +7,19 @@ export const backendAdapter = {
     return provider !== 'local';
   },
 
+  isFirebase() {
+    return provider === 'firebase';
+  },
+
   async sync() {
     if (provider === 'local') {
       return { synced: false, reason: 'provider-local' };
     }
 
-    // Placeholder para futura integracao Firebase/Supabase.
-    return { synced: false, reason: 'not-implemented' };
+    if (provider === 'firebase') {
+      return { synced: true, reason: 'provider-firebase' };
+    }
+
+    return { synced: false, reason: 'provider-not-supported' };
   },
 };

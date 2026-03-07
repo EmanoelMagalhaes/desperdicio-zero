@@ -1,33 +1,180 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { STORAGE_KEY, defaultState } from '../data/defaultState';
 import { loginWithMode, registerClientAccount } from '../services/authService';
+import { loginWithFirebase, logoutFirebase, registerClientWithFirebase, subscribeAuthSession } from '../services/firebaseAuthService';
+import {
+  addInventoryItem,
+  addShoppingItem,
+  deleteInventoryItem,
+  deleteShoppingItem,
+  loadClientData,
+  subscribeClientAccounts,
+  subscribeClientData,
+  toggleChallengeItem,
+  toggleShoppingItem,
+} from '../services/firebaseDataService';
+import { backendAdapter } from '../services/backendAdapter';
 import { loadState, persistState } from '../services/storageService';
 import { daysUntil } from '../utils/date';
 import { createId } from '../utils/ids';
 
 const AppStoreContext = createContext(null);
 
+function upsertClientAccount(accounts, account) {
+  if (!account || account.role !== 'client') return accounts;
+
+  const exists = accounts.some((item) => item.id === account.id);
+  if (exists) {
+    return accounts.map((item) => (item.id === account.id ? { ...item, ...account } : item));
+  }
+
+  return [...accounts, account];
+}
+
+function createEmptyOperationalState() {
+  return {
+    clientAccounts: [],
+    adminAccounts: [],
+    inventories: {},
+    shoppingLists: {},
+    challenges: {},
+  };
+}
+
 export function AppStoreProvider({ children }) {
+  const firebaseMode = backendAdapter.isFirebase();
+
   const [state, setState] = useState(defaultState);
   const [session, setSession] = useState(null);
-  const [adminSelectedClientId, setAdminSelectedClientId] = useState('cliente-demo');
+  const [adminSelectedClientId, setAdminSelectedClientId] = useState('');
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
+    if (firebaseMode) {
+      setState((prev) => ({ ...prev, ...createEmptyOperationalState() }));
+      setReady(true);
+      return;
+    }
+
     const loaded = loadState(STORAGE_KEY, defaultState);
     setState(loaded);
+    setAdminSelectedClientId('cliente-demo');
     setReady(true);
-  }, []);
+  }, [firebaseMode]);
 
   useEffect(() => {
-    if (!ready) return;
+    if (!ready || firebaseMode) return;
     persistState(STORAGE_KEY, state);
-  }, [ready, state]);
+  }, [ready, state, firebaseMode]);
+
+  useEffect(() => {
+    if (!firebaseMode) return;
+
+    const unsubscribe = subscribeAuthSession((account) => {
+      if (!account) {
+        setSession(null);
+        setState((prev) => ({ ...prev, ...createEmptyOperationalState() }));
+        setAdminSelectedClientId('');
+        return;
+      }
+
+      setSession(account);
+      if (account.role === 'client') {
+        setState((prev) => ({
+          ...prev,
+          clientAccounts: upsertClientAccount(prev.clientAccounts, account),
+        }));
+      }
+    });
+
+    return unsubscribe;
+  }, [firebaseMode]);
+
+  useEffect(() => {
+    if (!firebaseMode || session?.role !== 'client') return;
+
+    const clientId = session.id;
+    const unsubscribe = subscribeClientData(clientId, (data) => {
+      setState((prev) => ({
+        ...prev,
+        clientAccounts: upsertClientAccount(prev.clientAccounts, session),
+        inventories: { ...prev.inventories, [clientId]: data.inventory },
+        shoppingLists: { ...prev.shoppingLists, [clientId]: data.shoppingList },
+        challenges: { ...prev.challenges, [clientId]: data.challenges },
+      }));
+    });
+
+    return unsubscribe;
+  }, [firebaseMode, session]);
+
+  useEffect(() => {
+    if (!firebaseMode || session?.role !== 'admin') return;
+
+    let active = true;
+
+    const unsubscribe = subscribeClientAccounts(async (clients) => {
+      if (!active) return;
+
+      setState((prev) => ({ ...prev, clientAccounts: clients }));
+      setAdminSelectedClientId((prev) => {
+        if (prev && clients.some((client) => client.id === prev)) return prev;
+        return clients[0]?.id || '';
+      });
+
+      const loaded = await Promise.all(
+        clients.map(async (client) => ({
+          id: client.id,
+          data: await loadClientData(client.id),
+        }))
+      );
+
+      if (!active) return;
+
+      setState((prev) => {
+        const inventories = { ...prev.inventories };
+        const shoppingLists = { ...prev.shoppingLists };
+        const challenges = { ...prev.challenges };
+
+        loaded.forEach(({ id, data }) => {
+          inventories[id] = data.inventory;
+          shoppingLists[id] = data.shoppingList;
+          challenges[id] = data.challenges;
+        });
+
+        return {
+          ...prev,
+          inventories,
+          shoppingLists,
+          challenges,
+        };
+      });
+    });
+
+    return () => {
+      active = false;
+      unsubscribe();
+    };
+  }, [firebaseMode, session?.role]);
+
+  useEffect(() => {
+    if (!firebaseMode || session?.role !== 'admin' || !adminSelectedClientId) return;
+
+    const unsubscribe = subscribeClientData(adminSelectedClientId, (data) => {
+      setState((prev) => ({
+        ...prev,
+        inventories: { ...prev.inventories, [adminSelectedClientId]: data.inventory },
+        shoppingLists: { ...prev.shoppingLists, [adminSelectedClientId]: data.shoppingList },
+        challenges: { ...prev.challenges, [adminSelectedClientId]: data.challenges },
+      }));
+    });
+
+    return unsubscribe;
+  }, [firebaseMode, session?.role, adminSelectedClientId]);
 
   useEffect(() => {
     if (session?.role !== 'admin') return;
-    const exists = state.clientAccounts.some((client) => client.id === adminSelectedClientId);
 
+    const exists = state.clientAccounts.some((client) => client.id === adminSelectedClientId);
     if (!exists) {
       setAdminSelectedClientId(state.clientAccounts[0]?.id || '');
     }
@@ -51,9 +198,9 @@ export function AppStoreProvider({ children }) {
     [state.challenges, activeClientId]
   );
 
-  const demoInventory = state.inventories['cliente-demo'] || [];
-  const demoShoppingList = state.shoppingLists['cliente-demo'] || [];
-  const demoChallenges = state.challenges['cliente-demo'] || { completed: [], current: [] };
+  const demoInventory = defaultState.inventories['cliente-demo'] || [];
+  const demoShoppingList = defaultState.shoppingLists['cliente-demo'] || [];
+  const demoChallenges = defaultState.challenges['cliente-demo'] || { completed: [], current: [] };
 
   const pendingCount = useMemo(() => {
     if (!session) return 0;
@@ -68,7 +215,15 @@ export function AppStoreProvider({ children }) {
   }, [session, state.inventories, inventory]);
 
   const login = useCallback(
-    (mode, email, password) => {
+    async (mode, email, password) => {
+      if (firebaseMode) {
+        const result = await loginWithFirebase(mode, email, password);
+        if (!result.ok) return result;
+
+        setSession(result.account);
+        return result;
+      }
+
       const result = loginWithMode(state, mode, email, password);
       if (!result.ok) return result;
 
@@ -76,32 +231,56 @@ export function AppStoreProvider({ children }) {
       if (result.account.role === 'admin') {
         setAdminSelectedClientId(state.clientAccounts[0]?.id || '');
       }
+
       return { ok: true, account: result.account };
     },
-    [state]
+    [firebaseMode, state]
   );
 
   const register = useCallback(
-    (form) => {
+    async (form) => {
+      if (firebaseMode) {
+        const result = await registerClientWithFirebase(form);
+        if (!result.ok) return result;
+
+        setSession(result.account);
+        setState((prev) => ({
+          ...prev,
+          clientAccounts: upsertClientAccount(prev.clientAccounts, result.account),
+        }));
+
+        return result;
+      }
+
       const result = registerClientAccount(state, form);
       if (!result.ok) return result;
 
       setState(result.nextState);
       setSession(result.account);
+
       return { ok: true, account: result.account };
     },
-    [state]
+    [firebaseMode, state]
   );
 
-  const logout = useCallback(() => {
+  const logout = useCallback(async () => {
+    if (firebaseMode) {
+      await logoutFirebase();
+    }
+
     setSession(null);
-  }, []);
+  }, [firebaseMode]);
 
   const addInventory = useCallback(
-    (item, clientId = activeClientId) => {
+    async (item, clientId = activeClientId) => {
       if (!clientId) return;
 
       const payload = { ...item, id: item.id || createId('item') };
+
+      if (firebaseMode) {
+        await addInventoryItem(clientId, payload);
+      }
+
       setState((prev) => ({
         ...prev,
         inventories: {
@@ -110,12 +289,16 @@ export function AppStoreProvider({ children }) {
         },
       }));
     },
-    [activeClientId]
+    [activeClientId, firebaseMode]
   );
 
   const deleteInventory = useCallback(
-    (id, clientId = activeClientId) => {
+    async (id, clientId = activeClientId) => {
       if (!clientId) return;
+
+      if (firebaseMode) {
+        await deleteInventoryItem(clientId, id);
+      }
 
       setState((prev) => ({
         ...prev,
@@ -125,14 +308,19 @@ export function AppStoreProvider({ children }) {
         },
       }));
     },
-    [activeClientId]
+    [activeClientId, firebaseMode]
   );
 
   const addShopping = useCallback(
-    (item, clientId = activeClientId) => {
+    async (item, clientId = activeClientId) => {
       if (!clientId) return;
 
       const payload = { ...item, id: item.id || createId('shop'), checked: Boolean(item.checked) };
+
+      if (firebaseMode) {
+        await addShoppingItem(clientId, payload);
+      }
+
       setState((prev) => ({
         ...prev,
         shoppingLists: {
@@ -141,12 +329,16 @@ export function AppStoreProvider({ children }) {
         },
       }));
     },
-    [activeClientId]
+    [activeClientId, firebaseMode]
   );
 
   const toggleShopping = useCallback(
-    (id, clientId = activeClientId) => {
+    async (id, clientId = activeClientId) => {
       if (!clientId) return;
+
+      if (firebaseMode) {
+        await toggleShoppingItem(clientId, id);
+      }
 
       setState((prev) => ({
         ...prev,
@@ -158,12 +350,16 @@ export function AppStoreProvider({ children }) {
         },
       }));
     },
-    [activeClientId]
+    [activeClientId, firebaseMode]
   );
 
   const deleteShopping = useCallback(
-    (id, clientId = activeClientId) => {
+    async (id, clientId = activeClientId) => {
       if (!clientId) return;
+
+      if (firebaseMode) {
+        await deleteShoppingItem(clientId, id);
+      }
 
       setState((prev) => ({
         ...prev,
@@ -173,12 +369,26 @@ export function AppStoreProvider({ children }) {
         },
       }));
     },
-    [activeClientId]
+    [activeClientId, firebaseMode]
   );
 
   const toggleChallenge = useCallback(
-    (challenge, clientId = activeClientId) => {
+    async (challenge, clientId = activeClientId) => {
       if (!clientId) return;
+
+      if (firebaseMode) {
+        const nextChallenges = await toggleChallengeItem(clientId, challenge);
+
+        setState((prev) => ({
+          ...prev,
+          challenges: {
+            ...prev.challenges,
+            [clientId]: nextChallenges,
+          },
+        }));
+
+        return;
+      }
 
       setState((prev) => {
         const current = prev.challenges[clientId] || { completed: [], current: [] };
@@ -198,7 +408,7 @@ export function AppStoreProvider({ children }) {
         };
       });
     },
-    [activeClientId]
+    [activeClientId, firebaseMode]
   );
 
   const value = useMemo(
@@ -226,6 +436,7 @@ export function AppStoreProvider({ children }) {
       toggleShopping,
       deleteShopping,
       toggleChallenge,
+      backendMode: firebaseMode ? 'firebase' : 'local',
     }),
     [
       ready,
@@ -250,6 +461,7 @@ export function AppStoreProvider({ children }) {
       toggleShopping,
       deleteShopping,
       toggleChallenge,
+      firebaseMode,
     ]
   );
 

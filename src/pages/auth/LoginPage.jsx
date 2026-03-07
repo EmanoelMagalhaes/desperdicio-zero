@@ -8,12 +8,18 @@ export default function LoginPage() {
   const [mode, setMode] = useState('client');
   const [form, setForm] = useState({ email: '', password: '' });
   const [message, setMessage] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  const { login } = useAppStore();
+  const { login, backendMode } = useAppStore();
   const navigate = useNavigate();
 
-  function handleSubmit() {
-    const result = login(mode, form.email, form.password);
+  async function handleSubmit() {
+    setLoading(true);
+    setMessage('');
+
+    const result = await login(mode, form.email, form.password);
+    setLoading(false);
+
     if (!result.ok) {
       setMessage(result.error);
       return;
@@ -37,13 +43,18 @@ export default function LoginPage() {
           </h1>
 
           <p className="mt-6 max-w-2xl text-lg leading-8 text-white/72">
-            O MVP ja entrega autenticacao local, controle de estoque, compras, receitas sugeridas e desafios.
+            Modo atual: {backendMode === 'firebase' ? 'Firebase (auth real + banco online)' : 'LocalStorage (modo local)'}.
           </p>
 
           <div className="mt-10 grid gap-4 sm:grid-cols-3">
             <MetricCard label="Modulos" value="6 telas" icon={BarChart3} tone="emerald" />
             <MetricCard label="Acesso" value="Cliente + Admin" icon={Lock} tone="blue" />
-            <MetricCard label="Persistencia" value="LocalStorage" icon={CheckCircle2} tone="amber" />
+            <MetricCard
+              label="Persistencia"
+              value={backendMode === 'firebase' ? 'Firebase' : 'LocalStorage'}
+              icon={CheckCircle2}
+              tone="amber"
+            />
           </div>
 
           <div className="mt-10 rounded-[28px] border border-white/10 bg-white/[0.04] p-6">
@@ -51,13 +62,13 @@ export default function LoginPage() {
             <div className="mt-4 grid gap-4 md:grid-cols-2">
               <div className="rounded-2xl border border-white/10 bg-neutral-900 p-4">
                 <div className="mb-2 text-sm font-semibold text-emerald-300">Cliente</div>
-                <div className="text-sm text-white/70">E-mail: cliente@desperdiciozero.com</div>
-                <div className="text-sm text-white/70">Senha: 123456</div>
+                <div className="text-sm text-white/70">Crie uma conta em "Cadastrar" para testar o fluxo real.</div>
               </div>
               <div className="rounded-2xl border border-white/10 bg-neutral-900 p-4">
                 <div className="mb-2 text-sm font-semibold text-emerald-300">Administrador</div>
-                <div className="text-sm text-white/70">E-mail: admin@desperdiciozero.com</div>
-                <div className="text-sm text-white/70">Senha: admin123</div>
+                <div className="text-sm text-white/70">
+                  Requer conta com role admin no Firebase.
+                </div>
               </div>
             </div>
           </div>
@@ -114,9 +125,10 @@ export default function LoginPage() {
             />
             <button
               onClick={handleSubmit}
-              className="w-full rounded-2xl bg-emerald-500 px-5 py-3 font-semibold text-neutral-950 transition hover:scale-[1.01]"
+              disabled={loading}
+              className="w-full rounded-2xl bg-emerald-500 px-5 py-3 font-semibold text-neutral-950 transition hover:scale-[1.01] disabled:opacity-60"
             >
-              Entrar
+              {loading ? 'Entrando...' : 'Entrar'}
             </button>
           </div>
 
