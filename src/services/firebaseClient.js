@@ -33,6 +33,7 @@ export function createSecondaryAuthApp(name) {
   return {
     app,
     auth: getAuth(app),
+    db: getFirestore(app),
   };
 }
 

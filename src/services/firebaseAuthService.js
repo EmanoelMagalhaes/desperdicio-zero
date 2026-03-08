@@ -88,7 +88,7 @@ async function getProfile(uid) {
   return snapshot.data();
 }
 
-async function createClientProfile(uid, form, approvalStatus, metadata = {}) {
+async function createClientProfile(firestoreDb, uid, form, approvalStatus, metadata = {}) {
   const { name, email, businessType } = form;
 
   const profile = {
@@ -101,7 +101,7 @@ async function createClientProfile(uid, form, approvalStatus, metadata = {}) {
     ...metadata,
   };
 
-  await setDoc(doc(db, 'users', uid), profile, { merge: true });
+  await setDoc(doc(firestoreDb, 'users', uid), profile, { merge: true });
 
   return profile;
 }
@@ -167,6 +167,7 @@ export async function registerClientWithFirebase(form) {
     const uid = credential.user.uid;
 
     await createClientProfile(
+      secondaryContext.db,
       uid,
       { name, email, businessType },
       APPROVAL_STATUS.PENDING,
@@ -217,6 +218,7 @@ export async function createClientByAdminWithFirebase(form, adminAccount) {
     const uid = credential.user.uid;
 
     await createClientProfile(
+      db,
       uid,
       { name, email, businessType },
       APPROVAL_STATUS.APPROVED,
@@ -298,5 +300,3 @@ export async function logoutFirebase() {
 }
 
 export { APPROVAL_STATUS };
-
-
