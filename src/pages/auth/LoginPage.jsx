@@ -147,13 +147,17 @@ export default function LoginPage() {
           ) : null}
 
           {mode === 'client' ? (
-            <Link to="/register" className="mt-5 block text-sm text-emerald-300 hover:text-emerald-200">
-              Criar nova conta de cliente
-            </Link>
+            <div className="mt-5 flex flex-col gap-2 text-sm">
+              <Link to="/forgot-password" className="text-white/70 hover:text-white">
+                Esqueci minha senha
+              </Link>
+              <Link to="/register" className="text-emerald-300 hover:text-emerald-200">
+                Criar nova conta de cliente
+              </Link>
+            </div>
           ) : null}
         </div>
       </div>
     </div>
   );
 }
-

@@ -1,7 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { STORAGE_KEY, defaultState } from '../data/defaultState';
 import { createClientAccountByAdmin, loginWithMode, registerClientAccount } from '../services/authService';
-import { createClientByAdminWithFirebase, loginWithFirebase, logoutFirebase, registerClientWithFirebase, subscribeAuthSession } from '../services/firebaseAuthService';
+import { createClientByAdminWithFirebase, loginWithFirebase, logoutFirebase, registerClientWithFirebase, sendPasswordResetWithFirebase, subscribeAuthSession } from '../services/firebaseAuthService';
 import {
   addInventoryItem,
   addShoppingItem,
@@ -258,7 +258,24 @@ export function AppStoreProvider({ children }) {
     },
     [firebaseMode, state]
   );
+  const requestPasswordReset = useCallback(
+    async (email) => {
+      if (!email) {
+        return { ok: false, error: 'Informe o e-mail para recuperar a senha.' };
+      }
 
+      if (firebaseMode) {
+        return sendPasswordResetWithFirebase(email);
+      }
+
+      return {
+        ok: true,
+        message:
+          'No modo local nao ha envio real de e-mail. Em producao com Firebase, o link de redefinicao sera enviado para o endereco informado.',
+      };
+    },
+    [firebaseMode]
+  );
   const createClientByAdmin = useCallback(
     async (form) => {
       if (session?.role !== 'admin') {
@@ -525,6 +542,7 @@ export function AppStoreProvider({ children }) {
       setAdminSelectedClientId,
       login,
       register,
+      requestPasswordReset,
       createClientByAdmin,
       setClientApproval,
       logout,
@@ -553,6 +571,7 @@ export function AppStoreProvider({ children }) {
       adminSelectedClientId,
       login,
       register,
+      requestPasswordReset,
       createClientByAdmin,
       setClientApproval,
       logout,
@@ -579,6 +598,7 @@ export function useAppStore() {
 
   return context;
 }
+
 
 
 

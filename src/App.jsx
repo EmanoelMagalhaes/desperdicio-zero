@@ -8,6 +8,7 @@ import ProtectedRoute from './components/routing/ProtectedRoute';
 import { useAppStore } from './hooks/useAppStore';
 import LoginPage from './pages/auth/LoginPage';
 import RegisterPage from './pages/auth/RegisterPage';
+import ForgotPasswordPage from './pages/auth/ForgotPasswordPage';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import ClientManager from './pages/admin/ClientManager';
 import ClientView from './pages/admin/ClientView';
@@ -52,6 +53,7 @@ export default function App() {
         <Route element={<PublicLayout />}>
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
+          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
         </Route>
       </Route>
 

@@ -4,6 +4,7 @@ import {
   onAuthStateChanged,
   reload,
   sendEmailVerification,
+  sendPasswordResetEmail,
   signInWithEmailAndPassword,
   signOut,
 } from 'firebase/auth';
@@ -305,6 +306,30 @@ export async function registerClientWithFirebase(form) {
   }
 }
 
+export async function sendPasswordResetWithFirebase(email) {
+  if (!email) {
+    return { ok: false, error: 'Informe o e-mail para recuperar a senha.' };
+  }
+
+  try {
+    assertFirebaseReady();
+    await sendPasswordResetEmail(auth, email);
+
+    return {
+      ok: true,
+      message: 'Se existir uma conta com este e-mail, enviamos o link de redefinicao de senha.',
+    };
+  } catch (error) {
+    if (error?.code === 'auth/user-not-found') {
+      return {
+        ok: true,
+        message: 'Se existir uma conta com este e-mail, enviamos o link de redefinicao de senha.',
+      };
+    }
+
+    return { ok: false, error: mapAuthError(error) };
+  }
+}
 export async function createClientByAdminWithFirebase(form, adminAccount) {
   const { name, email, password, businessType } = form;
 
@@ -427,4 +452,5 @@ export async function logoutFirebase() {
 }
 
 export { APPROVAL_STATUS };
+
 
