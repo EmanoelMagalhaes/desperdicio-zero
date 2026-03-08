@@ -1,4 +1,4 @@
-# Desperdicio Zero
+﻿# Desperdicio Zero
 
 MVP web da plataforma **Desperdicio Zero**, com area publica, autenticacao, area do cliente, area administrativa e modulo de Cozinha Inteligente.
 
@@ -8,7 +8,14 @@ MVP web da plataforma **Desperdicio Zero**, com area publica, autenticacao, area
 - TailwindCSS
 - Lucide Icons
 - Framer Motion
-- LocalStorage (MVP)
+- Firebase Authentication + Firestore (modo online)
+- LocalStorage (modo local de fallback)
+
+## Versao estavel
+
+- Nome: **Versao 01**
+- Tag Git: `versao-01`
+- Commit base: `68e51ce`
 
 ## Estrutura
 
@@ -39,41 +46,37 @@ src/
 ## Rodar localmente
 
 ```bash
-npm install
-npm run dev
+npm.cmd install
+npm.cmd run dev
 ```
 
 ## Build de producao
 
 ```bash
-npm run build
-npm run preview
+npm.cmd run build
+npm.cmd run preview
 ```
 
 ## Deploy com GitHub Pages
 
-Como o projeto usa `HashRouter` + `base: './'`, nao precisa configurar `homepage`.
-
-```bash
-npm install
-npm run deploy
-```
-
-### Deploy automatico (GitHub Actions)
-
 O workflow em `.github/workflows/deploy-gh-pages.yml` publica `dist` no branch `gh-pages` a cada push no branch `main`.
 
-## Preparacao para backend futuro
+## Modo de backend
 
-- Variavel `VITE_BACKEND_PROVIDER` em `.env`:
-  - `local` (default MVP)
-  - `firebase`
-  - `supabase`
-- Arquivo `src/services/backendAdapter.js` cria o ponto de extensao para sincronizacao remota.
+Variavel `VITE_BACKEND_PROVIDER`:
 
-## Paginas criadas
+- `local` (MVP local)
+- `firebase` (auth e banco real)
+- `supabase` (reservado para futuro)
 
-- Public: `LandingPage`, `DemoKitchen`, `DemoRecipes`, `DemoShopping`, `DemoTips`
-- Auth: `LoginPage`, `RegisterPage`
-- Client: `DashboardPage`, `InventoryPage`, `ShoppingPage`, `RecipesPage`, `TipsPage`
-- Admin: `AdminDashboard`, `ClientManager`, `ClientView`
+## Documentacao completa
+
+- Indice: [`docs/README.md`](./docs/README.md)
+- Versao de referencia: [`docs/VERSAO_01.md`](./docs/VERSAO_01.md)
+- Arquitetura: [`docs/ARQUITETURA_E_FLUXOS.md`](./docs/ARQUITETURA_E_FLUXOS.md)
+- Setup Windows: [`docs/AMBIENTE_WINDOWS.md`](./docs/AMBIENTE_WINDOWS.md)
+- Firebase: [`docs/FIREBASE_OPERACAO.md`](./docs/FIREBASE_OPERACAO.md)
+- Deploy: [`docs/DEPLOY_GITHUB_PAGES.md`](./docs/DEPLOY_GITHUB_PAGES.md)
+- Manutencao/Rollback: [`docs/MANUTENCAO_E_ROLLBACK.md`](./docs/MANUTENCAO_E_ROLLBACK.md)
+- Funcoes-chave: [`docs/FUNCOES_CHAVE.md`](./docs/FUNCOES_CHAVE.md)
+- Mapa de arquivos: [`docs/MAPA_DE_ARQUIVOS.md`](./docs/MAPA_DE_ARQUIVOS.md)
