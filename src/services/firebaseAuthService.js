@@ -1,6 +1,9 @@
 import {
   createUserWithEmailAndPassword,
+  deleteUser,
   onAuthStateChanged,
+  reload,
+  sendEmailVerification,
   signInWithEmailAndPassword,
   signOut,
 } from 'firebase/auth';
@@ -55,11 +58,14 @@ function mapAuthError(error) {
   if (code === 'auth/invalid-api-key') {
     return 'Chave da API invalida. Revise os Secrets/Variaveis do deploy.';
   }
+  if (code === 'auth/invalid-continue-uri' || code === 'auth/unauthorized-continue-uri') {
+    return 'Falha ao enviar verificacao de e-mail. Revise os dominios autorizados no Firebase.';
+  }
 
   return `Nao foi possivel concluir a autenticacao agora. (${code || 'erro-desconhecido'})`;
 }
 
-function toSessionAccount(uid, profile) {
+function toSessionAccount(uid, profile, emailVerified = false) {
   return {
     id: uid,
     role: profile.role,
@@ -67,6 +73,7 @@ function toSessionAccount(uid, profile) {
     email: profile.email || '',
     businessType: profile.businessType || 'Operacao',
     approvalStatus: profile.approvalStatus || APPROVAL_STATUS.APPROVED,
+    emailVerified,
   };
 }
 
@@ -132,6 +139,23 @@ export async function loginWithFirebase(mode, email, password) {
     }
 
     if (mode === 'client') {
+      await reload(credential.user);
+
+      if (!credential.user.emailVerified) {
+        await signOut(auth);
+        return { ok: false, error: 'Confirme seu e-mail antes de entrar. Verifique sua caixa de entrada.' };
+      }
+
+      await setDoc(
+        doc(db, 'users', credential.user.uid),
+        {
+          emailVerified: true,
+          emailVerifiedAt: serverTimestamp(),
+          updatedAt: serverTimestamp(),
+        },
+        { merge: true }
+      );
+
       const status = profile.approvalStatus || APPROVAL_STATUS.APPROVED;
       if (status !== APPROVAL_STATUS.APPROVED) {
         await signOut(auth);
@@ -139,7 +163,10 @@ export async function loginWithFirebase(mode, email, password) {
       }
     }
 
-    return { ok: true, account: toSessionAccount(credential.user.uid, profile) };
+    return {
+      ok: true,
+      account: toSessionAccount(credential.user.uid, profile, credential.user.emailVerified),
+    };
   } catch (error) {
     console.error('loginWithFirebase error:', error);
     return { ok: false, error: mapAuthError(error) };
@@ -155,6 +182,7 @@ export async function registerClientWithFirebase(form) {
 
   let secondaryApp = null;
   let secondaryAuth = null;
+  let createdUser = null;
 
   try {
     assertFirebaseReady();
@@ -164,22 +192,36 @@ export async function registerClientWithFirebase(form) {
     secondaryAuth = secondaryContext.auth;
 
     const credential = await createUserWithEmailAndPassword(secondaryAuth, email, password);
-    const uid = credential.user.uid;
+    createdUser = credential.user;
+
+    await sendEmailVerification(createdUser);
 
     await createClientProfile(
       secondaryContext.db,
-      uid,
+      createdUser.uid,
       { name, email, businessType },
       APPROVAL_STATUS.PENDING,
-      { requestedAt: serverTimestamp() }
+      {
+        requestedAt: serverTimestamp(),
+        emailVerified: false,
+        verificationEmailSentAt: serverTimestamp(),
+      }
     );
 
     return {
       ok: true,
       requiresApproval: true,
-      message: 'Cadastro enviado para analise. Seu acesso ficara pendente ate autorizacao de um administrador.',
+      message: 'Cadastro enviado. Confirme seu e-mail e aguarde a autorizacao de um administrador.',
     };
   } catch (error) {
+    if (createdUser) {
+      try {
+        await deleteUser(createdUser);
+      } catch {
+        // noop
+      }
+    }
+
     console.error('registerClientWithFirebase error:', error);
     return { ok: false, error: mapAuthError(error) };
   } finally {
@@ -226,6 +268,7 @@ export async function createClientByAdminWithFirebase(form, adminAccount) {
         approvedAt: serverTimestamp(),
         approvedBy: adminAccount.id,
         createdByAdminAt: serverTimestamp(),
+        emailVerified: true,
       }
     );
 
@@ -234,13 +277,17 @@ export async function createClientByAdminWithFirebase(form, adminAccount) {
 
     return {
       ok: true,
-      account: toSessionAccount(uid, {
-        role: 'client',
-        name,
-        email,
-        businessType,
-        approvalStatus: APPROVAL_STATUS.APPROVED,
-      }),
+      account: toSessionAccount(
+        uid,
+        {
+          role: 'client',
+          name,
+          email,
+          businessType,
+          approvalStatus: APPROVAL_STATUS.APPROVED,
+        },
+        true
+      ),
     };
   } catch (error) {
     console.error('createClientByAdminWithFirebase error:', error);
@@ -281,13 +328,23 @@ export function subscribeAuthSession(onChange) {
         return;
       }
 
-      if (profile.role === 'client' && profile.approvalStatus && profile.approvalStatus !== APPROVAL_STATUS.APPROVED) {
-        await signOut(auth);
-        onChange(null);
-        return;
+      if (profile.role === 'client') {
+        await reload(user);
+
+        if (!user.emailVerified) {
+          await signOut(auth);
+          onChange(null);
+          return;
+        }
+
+        if (profile.approvalStatus && profile.approvalStatus !== APPROVAL_STATUS.APPROVED) {
+          await signOut(auth);
+          onChange(null);
+          return;
+        }
       }
 
-      onChange(toSessionAccount(user.uid, profile));
+      onChange(toSessionAccount(user.uid, profile, user.emailVerified));
     } catch {
       onChange(null);
     }

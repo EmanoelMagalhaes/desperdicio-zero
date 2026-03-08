@@ -41,13 +41,13 @@ export default function PendingApprovalPage() {
             </div>
 
             <h1 className="mt-6 max-w-3xl text-4xl font-black leading-tight md:text-6xl">
-              Seu cadastro foi enviado e esta em <span className="text-emerald-400">analise do administrador</span>.
+              Seu cadastro foi enviado e esta em <span className="text-emerald-400">analise e verificacao</span>.
             </h1>
 
             <p className="mt-6 max-w-2xl text-lg leading-8 text-white/72">
               {businessName
-                ? `${businessName}, ja recebemos seu cadastro. Assim que um administrador aprovar, seu acesso sera liberado automaticamente.`
-                : 'Ja recebemos seu cadastro. Assim que um administrador aprovar, seu acesso sera liberado automaticamente.'}
+                ? `${businessName}, confira seu e-mail para validar o cadastro. Depois da validacao, aguarde a aprovacao do administrador para liberar seu acesso.`
+                : 'Confira seu e-mail para validar o cadastro. Depois da validacao, aguarde a aprovacao do administrador para liberar seu acesso.'}
             </p>
 
             <div className="mt-8 flex flex-wrap gap-3">
@@ -75,13 +75,13 @@ export default function PendingApprovalPage() {
 
             <div className="space-y-3 text-sm text-white/80">
               <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
-                1. O administrador revisa e aprova seu cadastro.
+                1. Confirme seu e-mail pelo link que enviamos.
               </div>
               <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
-                2. Com a aprovacao, seu login de cliente e liberado.
+                2. O administrador revisa e aprova seu cadastro.
               </div>
               <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
-                3. Voce acessa despensa, compras, receitas e desafios da sua operacao.
+                3. Com a aprovacao, seu login de cliente e liberado.
               </div>
             </div>
           </div>
