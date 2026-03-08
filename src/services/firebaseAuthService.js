@@ -182,7 +182,11 @@ export async function registerClientWithFirebase(form) {
 
   let secondaryApp = null;
   let secondaryAuth = null;
+  let secondaryDb = null;
   let createdUser = null;
+
+  const defaultPendingMessage =
+    'Cadastro enviado. Confirme seu e-mail e aguarde a autorizacao de um administrador.';
 
   try {
     assertFirebaseReady();
@@ -190,6 +194,7 @@ export async function registerClientWithFirebase(form) {
     const secondaryContext = createSecondaryAuthApp(`public-register-${Date.now()}`);
     secondaryApp = secondaryContext.app;
     secondaryAuth = secondaryContext.auth;
+    secondaryDb = secondaryContext.db;
 
     const credential = await createUserWithEmailAndPassword(secondaryAuth, email, password);
     createdUser = credential.user;
@@ -197,7 +202,7 @@ export async function registerClientWithFirebase(form) {
     await sendEmailVerification(createdUser);
 
     await createClientProfile(
-      secondaryContext.db,
+      secondaryDb,
       createdUser.uid,
       { name, email, businessType },
       APPROVAL_STATUS.PENDING,
@@ -211,9 +216,74 @@ export async function registerClientWithFirebase(form) {
     return {
       ok: true,
       requiresApproval: true,
-      message: 'Cadastro enviado. Confirme seu e-mail e aguarde a autorizacao de um administrador.',
+      message: defaultPendingMessage,
     };
   } catch (error) {
+    if (error?.code === 'auth/email-already-in-use' && secondaryAuth && secondaryDb) {
+      try {
+        const recovery = await signInWithEmailAndPassword(secondaryAuth, email, password);
+        const recoveryUser = recovery.user;
+
+        if (!recoveryUser.emailVerified) {
+          await sendEmailVerification(recoveryUser);
+        }
+
+        const profileSnapshot = await getDoc(doc(secondaryDb, 'users', recoveryUser.uid));
+
+        if (!profileSnapshot.exists()) {
+          await createClientProfile(
+            secondaryDb,
+            recoveryUser.uid,
+            { name, email, businessType },
+            APPROVAL_STATUS.PENDING,
+            {
+              requestedAt: serverTimestamp(),
+              emailVerified: Boolean(recoveryUser.emailVerified),
+              verificationEmailSentAt: serverTimestamp(),
+            }
+          );
+        } else {
+          const existingProfile = profileSnapshot.data() || {};
+
+          if (existingProfile.role !== 'client') {
+            return { ok: false, error: 'Esse e-mail pertence a um administrador.' };
+          }
+
+          if (existingProfile.approvalStatus === APPROVAL_STATUS.APPROVED) {
+            return { ok: false, error: 'Esse e-mail ja possui conta ativa. Use a tela de login.' };
+          }
+
+          await setDoc(
+            doc(secondaryDb, 'users', recoveryUser.uid),
+            {
+              name,
+              email,
+              businessType,
+              emailVerified: Boolean(recoveryUser.emailVerified),
+              verificationEmailSentAt: serverTimestamp(),
+              updatedAt: serverTimestamp(),
+            },
+            { merge: true }
+          );
+        }
+
+        return {
+          ok: true,
+          requiresApproval: true,
+          message:
+            'Encontramos um cadastro anterior com este e-mail. Reenviamos a verificacao e mantivemos seu cadastro em analise.',
+        };
+      } catch (recoveryError) {
+        if (recoveryError?.code === 'auth/wrong-password' || recoveryError?.code === 'auth/invalid-credential') {
+          return {
+            ok: false,
+            error:
+              'Esse e-mail ja esta em uso. Se a conta for sua, use a senha original ou recupere o acesso antes de tentar novo cadastro.',
+          };
+        }
+      }
+    }
+
     if (createdUser) {
       try {
         await deleteUser(createdUser);
@@ -357,3 +427,4 @@ export async function logoutFirebase() {
 }
 
 export { APPROVAL_STATUS };
+
