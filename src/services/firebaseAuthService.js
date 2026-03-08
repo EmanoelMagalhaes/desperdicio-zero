@@ -28,8 +28,29 @@ function mapAuthError(error) {
   if (code === 'auth/weak-password') {
     return 'A senha precisa ter pelo menos 6 caracteres.';
   }
+  if (code === 'auth/operation-not-allowed') {
+    return 'Login por e-mail/senha nao esta habilitado no Firebase Authentication.';
+  }
+  if (code === 'auth/unauthorized-domain') {
+    return 'Dominio nao autorizado no Firebase Authentication. Adicione o dominio do site em Authorized domains.';
+  }
+  if (code === 'auth/network-request-failed') {
+    return 'Falha de rede ao falar com o Firebase. Verifique sua conexao e tente novamente.';
+  }
+  if (code === 'auth/too-many-requests') {
+    return 'Muitas tentativas em pouco tempo. Aguarde alguns minutos e tente novamente.';
+  }
+  if (code === 'permission-denied') {
+    return 'Permissao negada no Firestore. Revise as regras do banco.';
+  }
+  if (code === 'failed-precondition') {
+    return 'O Firestore nao esta configurado corretamente para essa operacao.';
+  }
+  if (code === 'auth/invalid-api-key') {
+    return 'Chave da API invalida. Revise os Secrets/Variaveis do deploy.';
+  }
 
-  return 'Nao foi possivel concluir a autenticacao agora.';
+  return `Nao foi possivel concluir a autenticacao agora. (${code || 'erro-desconhecido'})`;
 }
 
 function toSessionAccount(uid, profile) {
@@ -75,6 +96,7 @@ export async function loginWithFirebase(mode, email, password) {
 
     return { ok: true, account: toSessionAccount(credential.user.uid, profile) };
   } catch (error) {
+    console.error('loginWithFirebase error:', error);
     return { ok: false, error: mapAuthError(error) };
   }
 }
@@ -111,6 +133,7 @@ export async function registerClientWithFirebase(form) {
       }),
     };
   } catch (error) {
+    console.error('registerClientWithFirebase error:', error);
     return { ok: false, error: mapAuthError(error) };
   }
 }
