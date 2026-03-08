@@ -43,17 +43,19 @@ export default function RegisterPage() {
         return;
       }
 
-      const successMessage =
-        result.message ||
-        (result.requiresApproval
-          ? 'Cadastro enviado para analise e pendente de autorizacao de um administrador.'
-          : 'Conta criada com sucesso. Redirecionando...');
+      if (result.requiresApproval) {
+        navigate('/register/pending', {
+          replace: true,
+          state: { businessName: form.name },
+        });
+        return;
+      }
 
-      setFeedback({ type: 'success', text: successMessage });
+      setFeedback({ type: 'success', text: result.message || 'Conta criada com sucesso. Redirecionando...' });
 
       setTimeout(() => {
         navigate('/login', { replace: true });
-      }, result.requiresApproval ? 1800 : 500);
+      }, 500);
     } catch (error) {
       setFeedback({
         type: 'error',

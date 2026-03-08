@@ -21,6 +21,7 @@ import DemoRecipes from './pages/public/DemoRecipes';
 import DemoShopping from './pages/public/DemoShopping';
 import DemoTips from './pages/public/DemoTips';
 import LandingPage from './pages/public/LandingPage';
+import PendingApprovalPage from './pages/public/PendingApprovalPage';
 
 export default function App() {
   const { ready } = useAppStore();
@@ -42,6 +43,9 @@ export default function App() {
         <Route path="/demo/receitas" element={<Navigate to="/demo/recipes" replace />} />
         <Route path="/demo/compras" element={<Navigate to="/demo/shopping" replace />} />
         <Route path="/demo/dicas" element={<Navigate to="/demo/tips" replace />} />
+
+        <Route path="/register/pending" element={<PendingApprovalPage />} />
+        <Route path="/cadastro-pendente" element={<PendingApprovalPage />} />
       </Route>
 
       <Route element={<GuestRoute />}>
