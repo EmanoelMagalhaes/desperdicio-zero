@@ -4,10 +4,10 @@ import { useAppStore } from '../../hooks/useAppStore';
 
 const publicNavItems = [
   { to: '/', label: 'Home', icon: Home },
-  { to: '/demo/kitchen', label: 'DemoKitchen', icon: Package },
-  { to: '/demo/shopping', label: 'DemoShopping', icon: ShoppingCart },
-  { to: '/demo/recipes', label: 'DemoRecipes', icon: ChefHat },
-  { to: '/demo/tips', label: 'DemoTips', icon: Lightbulb },
+  { to: '/demo/kitchen', label: 'Estoque', icon: Package },
+  { to: '/demo/shopping', label: 'Compras', icon: ShoppingCart },
+  { to: '/demo/recipes', label: 'Receitas', icon: ChefHat },
+  { to: '/demo/tips', label: 'Desafios', icon: Lightbulb },
 ];
 
 export default function PublicLayout() {

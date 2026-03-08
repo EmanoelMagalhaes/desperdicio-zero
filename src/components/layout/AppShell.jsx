@@ -1,14 +1,43 @@
-import { LogOut, Shield, User } from 'lucide-react';
+import { Download, LogOut, Shield, User } from 'lucide-react';
+import { useState } from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
 import { useAppStore } from '../../hooks/useAppStore';
 
+function feedbackTone(type) {
+  if (type === 'error') {
+    return 'border border-amber-500/20 bg-amber-500/10 text-amber-100';
+  }
+
+  return 'border border-emerald-500/20 bg-emerald-500/10 text-emerald-100';
+}
+
 export default function AppShell({ menuItems, subtitle }) {
-  const { session, pendingCount, logout, activeClient } = useAppStore();
+  const { session, pendingCount, logout, activeClient, exportBackup } = useAppStore();
+  const [feedback, setFeedback] = useState({ type: '', text: '' });
 
   const sessionLabel = session?.role === 'admin' ? 'Administrador' : 'Cliente';
   const contextLabel = session?.role === 'admin' && activeClient
     ? `Cliente ativo: ${activeClient.name}`
     : subtitle;
+
+  async function handleExport() {
+    try {
+      const result = await exportBackup();
+
+      if (!result.ok) {
+        setFeedback({ type: 'error', text: result.error || 'Nao foi possivel exportar o backup.' });
+      } else {
+        setFeedback({ type: 'success', text: `Backup exportado: ${result.fileName}` });
+      }
+    } catch (error) {
+      const errorMessage = typeof error?.message === 'string' && error.message.trim()
+        ? error.message
+        : 'Nao foi possivel exportar o backup.';
+      setFeedback({ type: 'error', text: errorMessage });
+    }
+
+    setTimeout(() => setFeedback({ type: '', text: '' }), 4000);
+  }
 
   return (
     <div className="min-h-screen bg-neutral-950 text-white">
@@ -56,7 +85,14 @@ export default function AppShell({ menuItems, subtitle }) {
             </nav>
           </div>
 
-          <div className="border-t border-white/10 p-4">
+          <div className="space-y-2 border-t border-white/10 p-4">
+            <button
+              onClick={handleExport}
+              className="flex w-full items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 text-white/85 transition hover:bg-white/[0.08]"
+            >
+              <Download size={16} />
+              Exportar backup
+            </button>
             <button
               onClick={logout}
               className="flex w-full items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 text-white/80 transition hover:bg-white/[0.08]"
@@ -80,6 +116,12 @@ export default function AppShell({ menuItems, subtitle }) {
                   {pendingCount} item(ns) com atencao
                 </div>
                 <button
+                  onClick={handleExport}
+                  className="rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-2 text-sm font-semibold text-white/85 transition hover:bg-white/[0.08]"
+                >
+                  Exportar backup
+                </button>
+                <button
                   onClick={logout}
                   className="rounded-2xl bg-emerald-500 px-4 py-2 font-semibold text-neutral-950 transition hover:scale-[1.02]"
                 >
@@ -87,6 +129,14 @@ export default function AppShell({ menuItems, subtitle }) {
                 </button>
               </div>
             </div>
+
+            {feedback.text ? (
+              <div className="mx-auto max-w-7xl px-4 pb-4 md:px-6">
+                <div className={`rounded-2xl px-4 py-3 text-sm ${feedbackTone(feedback.type)}`}>
+                  {feedback.text}
+                </div>
+              </div>
+            ) : null}
 
             <nav className="mx-auto flex max-w-7xl gap-2 overflow-x-auto px-4 pb-4 lg:hidden md:px-6">
               {menuItems.map((item) => {
@@ -96,7 +146,7 @@ export default function AppShell({ menuItems, subtitle }) {
                     key={`mobile-${item.to}`}
                     to={item.to}
                     className={({ isActive }) =>
-                      `inline-flex items-center gap-2 rounded-2xl px-3 py-2 text-sm font-semibold whitespace-nowrap ${
+                      `inline-flex items-center gap-2 whitespace-nowrap rounded-2xl px-3 py-2 text-sm font-semibold ${
                         isActive
                           ? 'bg-emerald-500 text-neutral-950'
                           : 'border border-white/10 bg-white/[0.03] text-white/70'

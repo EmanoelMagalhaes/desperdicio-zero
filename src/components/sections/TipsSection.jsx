@@ -1,9 +1,33 @@
+import { useState } from 'react';
 import { CheckCircle2, Lightbulb, Target } from 'lucide-react';
 import SectionTitle from '../common/SectionTitle';
 import { challengeTips } from '../../services/kitchenService';
 
+function getErrorMessage(error, fallback) {
+  if (!error) return fallback;
+  if (typeof error === 'string') return error;
+  if (typeof error.message === 'string' && error.message.trim()) return error.message;
+  return fallback;
+}
+
 export default function TipsSection({ challenges, onToggleChallenge, readOnly = false }) {
   const tips = challengeTips();
+  const [feedback, setFeedback] = useState({ type: '', text: '' });
+  const [updatingChallenge, setUpdatingChallenge] = useState('');
+
+  async function handleToggle(challenge) {
+    if (readOnly) return;
+
+    try {
+      setUpdatingChallenge(challenge);
+      setFeedback({ type: '', text: '' });
+      await onToggleChallenge(challenge);
+    } catch (error) {
+      setFeedback({ type: 'error', text: getErrorMessage(error, 'Nao foi possivel atualizar o desafio agora.') });
+    } finally {
+      setUpdatingChallenge('');
+    }
+  }
 
   return (
     <div>
@@ -39,6 +63,18 @@ export default function TipsSection({ challenges, onToggleChallenge, readOnly = 
             <div className="text-xl font-bold">Desafios atuais</div>
           </div>
 
+          {feedback.text ? (
+            <div
+              className={`mb-4 rounded-2xl px-4 py-3 text-sm ${
+                feedback.type === 'error'
+                  ? 'border border-amber-500/20 bg-amber-500/10 text-amber-100'
+                  : 'border border-emerald-500/20 bg-emerald-500/10 text-emerald-100'
+              }`}
+            >
+              {feedback.text}
+            </div>
+          ) : null}
+
           <div className="space-y-3">
             {challenges.current.map((challenge) => {
               const done = challenges.completed.includes(challenge);
@@ -46,19 +82,21 @@ export default function TipsSection({ challenges, onToggleChallenge, readOnly = 
               return (
                 <button
                   key={challenge}
-                  disabled={readOnly}
-                  onClick={() => onToggleChallenge(challenge)}
+                  disabled={readOnly || updatingChallenge === challenge}
+                  onClick={() => handleToggle(challenge)}
                   className={`flex w-full items-center justify-between rounded-2xl border px-4 py-4 text-left transition ${
                     done
                       ? 'border-emerald-500/20 bg-emerald-500/10 text-emerald-100'
                       : 'border-white/10 bg-neutral-900 text-white/78 hover:bg-white/[0.04]'
-                  } disabled:cursor-default`}
+                  } disabled:cursor-default disabled:opacity-80`}
                 >
                   <span>{challenge}</span>
                   {done ? (
                     <CheckCircle2 size={18} />
                   ) : (
-                    <span className="text-xs text-white/45">{readOnly ? 'demo' : 'marcar'}</span>
+                    <span className="text-xs text-white/45">
+                      {readOnly ? 'somente leitura' : updatingChallenge === challenge ? 'salvando' : 'marcar'}
+                    </span>
                   )}
                 </button>
               );

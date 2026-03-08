@@ -12,8 +12,18 @@ const defaultForm = {
   notes: '',
 };
 
+function getErrorMessage(error, fallback) {
+  if (!error) return fallback;
+  if (typeof error === 'string') return error;
+  if (typeof error.message === 'string' && error.message.trim()) return error.message;
+  return fallback;
+}
+
 export default function InventorySection({ items, onAdd, onDelete, readOnly = false }) {
   const [form, setForm] = useState(defaultForm);
+  const [feedback, setFeedback] = useState({ type: '', text: '' });
+  const [submitting, setSubmitting] = useState(false);
+  const [deletingId, setDeletingId] = useState('');
 
   const summary = useMemo(() => {
     const critical = items.filter((item) => daysUntil(item.expiry) <= 2).length;
@@ -21,10 +31,40 @@ export default function InventorySection({ items, onAdd, onDelete, readOnly = fa
     return { critical, expired };
   }, [items]);
 
-  function handleSubmit() {
-    if (!form.name || !form.quantity || !form.expiry || readOnly) return;
-    onAdd(form);
-    setForm(defaultForm);
+  async function handleSubmit() {
+    if (readOnly) return;
+
+    if (!form.name || !form.quantity || !form.expiry) {
+      setFeedback({ type: 'error', text: 'Preencha nome, quantidade e validade.' });
+      return;
+    }
+
+    try {
+      setSubmitting(true);
+      setFeedback({ type: '', text: '' });
+      await onAdd(form);
+      setForm({ ...defaultForm, expiry: addDays(3) });
+      setFeedback({ type: 'success', text: 'Produto salvo com sucesso.' });
+    } catch (error) {
+      setFeedback({ type: 'error', text: getErrorMessage(error, 'Nao foi possivel salvar o produto agora.') });
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  async function handleDelete(id) {
+    if (readOnly) return;
+
+    try {
+      setDeletingId(id);
+      setFeedback({ type: '', text: '' });
+      await onDelete(id);
+      setFeedback({ type: 'success', text: 'Produto removido com sucesso.' });
+    } catch (error) {
+      setFeedback({ type: 'error', text: getErrorMessage(error, 'Nao foi possivel remover o produto agora.') });
+    } finally {
+      setDeletingId('');
+    }
   }
 
   return (
@@ -96,12 +136,24 @@ export default function InventorySection({ items, onAdd, onDelete, readOnly = fa
             />
 
             <button
-              disabled={readOnly}
+              disabled={readOnly || submitting}
               onClick={handleSubmit}
               className="w-full rounded-2xl bg-emerald-500 px-5 py-3 font-semibold text-neutral-950 transition hover:scale-[1.01] disabled:cursor-not-allowed disabled:opacity-50"
             >
-              Salvar produto
+              {submitting ? 'Salvando...' : 'Salvar produto'}
             </button>
+
+            {feedback.text ? (
+              <div
+                className={`rounded-2xl px-4 py-3 text-sm ${
+                  feedback.type === 'error'
+                    ? 'border border-amber-500/20 bg-amber-500/10 text-amber-100'
+                    : 'border border-emerald-500/20 bg-emerald-500/10 text-emerald-100'
+                }`}
+              >
+                {feedback.text}
+              </div>
+            ) : null}
           </div>
         </div>
 
@@ -137,12 +189,12 @@ export default function InventorySection({ items, onAdd, onDelete, readOnly = fa
                         <div className="flex flex-col items-start gap-3 md:items-end">
                           <span className={`rounded-full border px-3 py-1 text-xs ${status.tone}`}>{status.label}</span>
                           <button
-                            disabled={readOnly}
-                            onClick={() => onDelete(item.id)}
+                            disabled={readOnly || deletingId === item.id}
+                            onClick={() => handleDelete(item.id)}
                             className="flex items-center gap-2 rounded-2xl border border-white/10 px-3 py-2 text-sm text-white/70 transition hover:bg-white/[0.06] disabled:cursor-not-allowed disabled:opacity-40"
                           >
                             <Trash2 size={15} />
-                            Remover
+                            {deletingId === item.id ? 'Removendo...' : 'Remover'}
                           </button>
                         </div>
                       </div>

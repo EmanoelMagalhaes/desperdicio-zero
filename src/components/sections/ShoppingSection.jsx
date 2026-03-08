@@ -8,13 +8,67 @@ const defaultForm = {
   priority: 'Media',
 };
 
+function getErrorMessage(error, fallback) {
+  if (!error) return fallback;
+  if (typeof error === 'string') return error;
+  if (typeof error.message === 'string' && error.message.trim()) return error.message;
+  return fallback;
+}
+
 export default function ShoppingSection({ list, onAdd, onToggle, onDelete, readOnly = false }) {
   const [form, setForm] = useState(defaultForm);
+  const [feedback, setFeedback] = useState({ type: '', text: '' });
+  const [submitting, setSubmitting] = useState(false);
+  const [updatingId, setUpdatingId] = useState('');
 
-  function handleSubmit() {
-    if (!form.name || !form.amount || readOnly) return;
-    onAdd({ ...form, checked: false });
-    setForm(defaultForm);
+  async function handleSubmit() {
+    if (readOnly) return;
+
+    if (!form.name || !form.amount) {
+      setFeedback({ type: 'error', text: 'Preencha produto e quantidade.' });
+      return;
+    }
+
+    try {
+      setSubmitting(true);
+      setFeedback({ type: '', text: '' });
+      await onAdd({ ...form, checked: false });
+      setForm(defaultForm);
+      setFeedback({ type: 'success', text: 'Item adicionado na lista com sucesso.' });
+    } catch (error) {
+      setFeedback({ type: 'error', text: getErrorMessage(error, 'Nao foi possivel adicionar o item agora.') });
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  async function handleToggle(id) {
+    if (readOnly) return;
+
+    try {
+      setUpdatingId(id);
+      setFeedback({ type: '', text: '' });
+      await onToggle(id);
+    } catch (error) {
+      setFeedback({ type: 'error', text: getErrorMessage(error, 'Nao foi possivel atualizar o item agora.') });
+    } finally {
+      setUpdatingId('');
+    }
+  }
+
+  async function handleDelete(id) {
+    if (readOnly) return;
+
+    try {
+      setUpdatingId(id);
+      setFeedback({ type: '', text: '' });
+      await onDelete(id);
+      setFeedback({ type: 'success', text: 'Item removido da lista com sucesso.' });
+    } catch (error) {
+      setFeedback({ type: 'error', text: getErrorMessage(error, 'Nao foi possivel remover o item agora.') });
+    } finally {
+      setUpdatingId('');
+    }
   }
 
   return (
@@ -54,12 +108,24 @@ export default function ShoppingSection({ list, onAdd, onToggle, onDelete, readO
               <option>Baixa</option>
             </select>
             <button
-              disabled={readOnly}
+              disabled={readOnly || submitting}
               onClick={handleSubmit}
               className="w-full rounded-2xl bg-emerald-500 px-5 py-3 font-semibold text-neutral-950 disabled:cursor-not-allowed disabled:opacity-50"
             >
-              Adicionar a lista
+              {submitting ? 'Adicionando...' : 'Adicionar a lista'}
             </button>
+
+            {feedback.text ? (
+              <div
+                className={`rounded-2xl px-4 py-3 text-sm ${
+                  feedback.type === 'error'
+                    ? 'border border-amber-500/20 bg-amber-500/10 text-amber-100'
+                    : 'border border-emerald-500/20 bg-emerald-500/10 text-emerald-100'
+                }`}
+              >
+                {feedback.text}
+              </div>
+            ) : null}
           </div>
         </div>
 
@@ -83,8 +149,8 @@ export default function ShoppingSection({ list, onAdd, onToggle, onDelete, readO
                 >
                   <div className="flex items-start gap-3">
                     <button
-                      disabled={readOnly}
-                      onClick={() => onToggle(item.id)}
+                      disabled={readOnly || updatingId === item.id}
+                      onClick={() => handleToggle(item.id)}
                       className={`mt-1 flex h-5 w-5 items-center justify-center rounded-full border ${
                         item.checked ? 'border-emerald-400 bg-emerald-500 text-neutral-950' : 'border-white/20'
                       } disabled:opacity-50`}
@@ -113,11 +179,11 @@ export default function ShoppingSection({ list, onAdd, onToggle, onDelete, readO
                       {item.priority}
                     </span>
                     <button
-                      disabled={readOnly}
-                      onClick={() => onDelete(item.id)}
+                      disabled={readOnly || updatingId === item.id}
+                      onClick={() => handleDelete(item.id)}
                       className="rounded-2xl border border-white/10 px-3 py-2 text-sm text-white/70 transition hover:bg-white/[0.05] disabled:opacity-40"
                     >
-                      Remover
+                      {updatingId === item.id ? 'Atualizando...' : 'Remover'}
                     </button>
                   </div>
                 </div>

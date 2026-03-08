@@ -11,7 +11,7 @@ const initialForm = {
 
 export default function RegisterPage() {
   const [form, setForm] = useState(initialForm);
-  const [message, setMessage] = useState('');
+  const [feedback, setFeedback] = useState({ type: '', text: '' });
   const [loading, setLoading] = useState(false);
 
   const { register, backendMode } = useAppStore();
@@ -19,17 +19,21 @@ export default function RegisterPage() {
 
   async function handleSubmit() {
     setLoading(true);
-    setMessage('');
+    setFeedback({ type: '', text: '' });
 
     const result = await register(form);
     setLoading(false);
 
     if (!result.ok) {
-      setMessage(result.error);
+      setFeedback({ type: 'error', text: result.error });
       return;
     }
 
-    navigate('/app/dashboard', { replace: true });
+    setFeedback({ type: 'success', text: 'Conta criada com sucesso. Redirecionando...' });
+
+    setTimeout(() => {
+      navigate('/app/dashboard', { replace: true });
+    }, 350);
   }
 
   return (
@@ -85,9 +89,15 @@ export default function RegisterPage() {
         </button>
       </div>
 
-      {message ? (
-        <div className="mt-4 rounded-2xl border border-amber-500/20 bg-amber-500/10 px-4 py-3 text-sm text-amber-100">
-          {message}
+      {feedback.text ? (
+        <div
+          className={`mt-4 rounded-2xl px-4 py-3 text-sm ${
+            feedback.type === 'error'
+              ? 'border border-amber-500/20 bg-amber-500/10 text-amber-100'
+              : 'border border-emerald-500/20 bg-emerald-500/10 text-emerald-100'
+          }`}
+        >
+          {feedback.text}
         </div>
       ) : null}
 

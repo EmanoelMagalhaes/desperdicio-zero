@@ -16,6 +16,7 @@ import {
 import { backendAdapter } from '../services/backendAdapter';
 import { loadState, persistState } from '../services/storageService';
 import { daysUntil } from '../utils/date';
+import { downloadJson } from '../utils/export';
 import { createId } from '../utils/ids';
 
 const AppStoreContext = createContext(null);
@@ -411,6 +412,40 @@ export function AppStoreProvider({ children }) {
     [activeClientId, firebaseMode]
   );
 
+  const exportBackup = useCallback(() => {
+    if (!session || !activeClientId) {
+      return { ok: false, error: 'Nenhum cliente ativo para exportacao.' };
+    }
+
+    const payload = {
+      generatedAt: new Date().toISOString(),
+      app: 'Desperdicio Zero',
+      backendMode: firebaseMode ? 'firebase' : 'local',
+      exportedBy: {
+        id: session.id,
+        role: session.role,
+        email: session.email,
+        name: session.name,
+      },
+      client: activeClient || {
+        id: activeClientId,
+        role: 'client',
+      },
+      data: {
+        inventory: state.inventories[activeClientId] || [],
+        shoppingList: state.shoppingLists[activeClientId] || [],
+        challenges: state.challenges[activeClientId] || { completed: [], current: [] },
+      },
+    };
+
+    const stamp = new Date().toISOString().replace(/[:.]/g, '-');
+    const fileName = `backup-${activeClientId}-${stamp}.json`;
+
+    downloadJson(fileName, payload);
+
+    return { ok: true, fileName };
+  }, [session, activeClientId, activeClient, firebaseMode, state]);
+
   const value = useMemo(
     () => ({
       ready,
@@ -436,6 +471,7 @@ export function AppStoreProvider({ children }) {
       toggleShopping,
       deleteShopping,
       toggleChallenge,
+      exportBackup,
       backendMode: firebaseMode ? 'firebase' : 'local',
     }),
     [
@@ -461,6 +497,7 @@ export function AppStoreProvider({ children }) {
       toggleShopping,
       deleteShopping,
       toggleChallenge,
+      exportBackup,
       firebaseMode,
     ]
   );

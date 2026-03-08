@@ -7,7 +7,7 @@ import { useAppStore } from '../../hooks/useAppStore';
 export default function LoginPage() {
   const [mode, setMode] = useState('client');
   const [form, setForm] = useState({ email: '', password: '' });
-  const [message, setMessage] = useState('');
+  const [feedback, setFeedback] = useState({ type: '', text: '' });
   const [loading, setLoading] = useState(false);
 
   const { login, backendMode } = useAppStore();
@@ -15,17 +15,21 @@ export default function LoginPage() {
 
   async function handleSubmit() {
     setLoading(true);
-    setMessage('');
+    setFeedback({ type: '', text: '' });
 
     const result = await login(mode, form.email, form.password);
     setLoading(false);
 
     if (!result.ok) {
-      setMessage(result.error);
+      setFeedback({ type: 'error', text: result.error });
       return;
     }
 
-    navigate(mode === 'admin' ? '/admin/dashboard' : '/app/dashboard', { replace: true });
+    setFeedback({ type: 'success', text: 'Acesso liberado. Redirecionando...' });
+
+    setTimeout(() => {
+      navigate(mode === 'admin' ? '/admin/dashboard' : '/app/dashboard', { replace: true });
+    }, 350);
   }
 
   return (
@@ -58,17 +62,15 @@ export default function LoginPage() {
           </div>
 
           <div className="mt-10 rounded-[28px] border border-white/10 bg-white/[0.04] p-6">
-            <div className="text-lg font-bold">Acessos de demonstracao</div>
+            <div className="text-lg font-bold">Perfis de acesso</div>
             <div className="mt-4 grid gap-4 md:grid-cols-2">
               <div className="rounded-2xl border border-white/10 bg-neutral-900 p-4">
                 <div className="mb-2 text-sm font-semibold text-emerald-300">Cliente</div>
-                <div className="text-sm text-white/70">Crie uma conta em "Cadastrar" para testar o fluxo real.</div>
+                <div className="text-sm text-white/70">Use o cadastro para criar sua conta real de operacao.</div>
               </div>
               <div className="rounded-2xl border border-white/10 bg-neutral-900 p-4">
                 <div className="mb-2 text-sm font-semibold text-emerald-300">Administrador</div>
-                <div className="text-sm text-white/70">
-                  Requer conta com role admin no Firebase.
-                </div>
+                <div className="text-sm text-white/70">Requer usuario com role admin no Firestore.</div>
               </div>
             </div>
           </div>
@@ -79,7 +81,7 @@ export default function LoginPage() {
             <button
               onClick={() => {
                 setMode('client');
-                setMessage('');
+                setFeedback({ type: '', text: '' });
               }}
               className={`rounded-2xl px-4 py-2 font-semibold transition ${
                 mode === 'client' ? 'bg-emerald-500 text-neutral-950' : 'bg-white/[0.05] text-white/70'
@@ -90,7 +92,7 @@ export default function LoginPage() {
             <button
               onClick={() => {
                 setMode('admin');
-                setMessage('');
+                setFeedback({ type: '', text: '' });
               }}
               className={`rounded-2xl px-4 py-2 font-semibold transition ${
                 mode === 'admin' ? 'bg-emerald-500 text-neutral-950' : 'bg-white/[0.05] text-white/70'
@@ -132,9 +134,15 @@ export default function LoginPage() {
             </button>
           </div>
 
-          {message ? (
-            <div className="mt-4 rounded-2xl border border-amber-500/20 bg-amber-500/10 px-4 py-3 text-sm text-amber-100">
-              {message}
+          {feedback.text ? (
+            <div
+              className={`mt-4 rounded-2xl px-4 py-3 text-sm ${
+                feedback.type === 'error'
+                  ? 'border border-amber-500/20 bg-amber-500/10 text-amber-100'
+                  : 'border border-emerald-500/20 bg-emerald-500/10 text-emerald-100'
+              }`}
+            >
+              {feedback.text}
             </div>
           ) : null}
 
