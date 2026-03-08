@@ -153,9 +153,17 @@ export async function registerClientWithFirebase(form) {
     return { ok: false, error: 'Preencha nome, e-mail e senha para criar sua conta.' };
   }
 
+  let secondaryApp = null;
+  let secondaryAuth = null;
+
   try {
     assertFirebaseReady();
-    const credential = await createUserWithEmailAndPassword(auth, email, password);
+
+    const secondaryContext = createSecondaryAuthApp(`public-register-${Date.now()}`);
+    secondaryApp = secondaryContext.app;
+    secondaryAuth = secondaryContext.auth;
+
+    const credential = await createUserWithEmailAndPassword(secondaryAuth, email, password);
     const uid = credential.user.uid;
 
     await createClientProfile(
@@ -165,16 +173,22 @@ export async function registerClientWithFirebase(form) {
       { requestedAt: serverTimestamp() }
     );
 
-    await signOut(auth);
-
     return {
       ok: true,
       requiresApproval: true,
-      message: 'Cadastro criado. Aguarde aprovacao do administrador para acessar o sistema.',
+      message: 'Cadastro enviado para analise. Seu acesso ficara pendente ate autorizacao de um administrador.',
     };
   } catch (error) {
     console.error('registerClientWithFirebase error:', error);
     return { ok: false, error: mapAuthError(error) };
+  } finally {
+    if (secondaryAuth) {
+      signOut(secondaryAuth).catch(() => null);
+    }
+
+    if (secondaryApp) {
+      disposeFirebaseApp(secondaryApp).catch(() => null);
+    }
   }
 }
 
@@ -284,4 +298,5 @@ export async function logoutFirebase() {
 }
 
 export { APPROVAL_STATUS };
+
 

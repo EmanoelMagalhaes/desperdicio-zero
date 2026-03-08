@@ -9,6 +9,20 @@ const initialForm = {
   businessType: 'Restaurante',
 };
 
+function withTimeout(promise, timeoutMs = 15000) {
+  return Promise.race([
+    promise,
+    new Promise((resolve) => {
+      setTimeout(() => {
+        resolve({
+          ok: false,
+          error: 'A requisicao demorou demais para responder. Tente novamente em alguns segundos.',
+        });
+      }, timeoutMs);
+    }),
+  ]);
+}
+
 export default function RegisterPage() {
   const [form, setForm] = useState(initialForm);
   const [feedback, setFeedback] = useState({ type: '', text: '' });
@@ -21,23 +35,36 @@ export default function RegisterPage() {
     setLoading(true);
     setFeedback({ type: '', text: '' });
 
-    const result = await register(form);
-    setLoading(false);
+    try {
+      const result = await withTimeout(register(form));
 
-    if (!result.ok) {
-      setFeedback({ type: 'error', text: result.error });
-      return;
+      if (!result.ok) {
+        setFeedback({ type: 'error', text: result.error });
+        return;
+      }
+
+      const successMessage =
+        result.message ||
+        (result.requiresApproval
+          ? 'Cadastro enviado para analise e pendente de autorizacao de um administrador.'
+          : 'Conta criada com sucesso. Redirecionando...');
+
+      setFeedback({ type: 'success', text: successMessage });
+
+      setTimeout(() => {
+        navigate('/login', { replace: true });
+      }, result.requiresApproval ? 1800 : 500);
+    } catch (error) {
+      setFeedback({
+        type: 'error',
+        text:
+          typeof error?.message === 'string' && error.message.trim()
+            ? error.message
+            : 'Nao foi possivel concluir o cadastro agora. Tente novamente.',
+      });
+    } finally {
+      setLoading(false);
     }
-
-    const successMessage = result.message || (result.requiresApproval
-      ? 'Cadastro criado. Aguarde aprovacao do administrador para acessar o sistema.'
-      : 'Conta criada com sucesso. Redirecionando...');
-
-    setFeedback({ type: 'success', text: successMessage });
-
-    setTimeout(() => {
-      navigate('/login', { replace: true });
-    }, result.requiresApproval ? 900 : 350);
   }
 
   return (
