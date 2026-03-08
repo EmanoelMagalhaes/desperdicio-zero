@@ -1,4 +1,6 @@
 export default function AdminClientToolbar({ clients, activeClient, selectedClientId, onSelectClient }) {
+  const hasClients = clients.length > 0;
+
   return (
     <div className="rounded-[28px] border border-white/10 bg-white/[0.04] p-5">
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
@@ -12,15 +14,20 @@ export default function AdminClientToolbar({ clients, activeClient, selectedClie
         <div className="min-w-[280px]">
           <label className="mb-2 block text-sm text-white/55">Selecionar cliente</label>
           <select
-            value={selectedClientId}
+            value={hasClients ? selectedClientId : ''}
             onChange={(event) => onSelectClient(event.target.value)}
-            className="w-full rounded-2xl border border-white/10 bg-neutral-900 px-4 py-3 outline-none focus:border-emerald-400"
+            disabled={!hasClients}
+            className="w-full rounded-2xl border border-white/10 bg-neutral-900 px-4 py-3 outline-none focus:border-emerald-400 disabled:opacity-60"
           >
-            {clients.map((client) => (
-              <option key={client.id} value={client.id}>
-                {client.name} - {client.businessType}
-              </option>
-            ))}
+            {hasClients ? (
+              clients.map((client) => (
+                <option key={client.id} value={client.id}>
+                  {client.name} - {client.businessType}
+                </option>
+              ))
+            ) : (
+              <option value="">Nenhum cliente aprovado</option>
+            )}
           </select>
         </div>
       </div>

@@ -29,11 +29,15 @@ export default function RegisterPage() {
       return;
     }
 
-    setFeedback({ type: 'success', text: 'Conta criada com sucesso. Redirecionando...' });
+    const successMessage = result.message || (result.requiresApproval
+      ? 'Cadastro criado. Aguarde aprovacao do administrador para acessar o sistema.'
+      : 'Conta criada com sucesso. Redirecionando...');
+
+    setFeedback({ type: 'success', text: successMessage });
 
     setTimeout(() => {
-      navigate('/app/dashboard', { replace: true });
-    }, 350);
+      navigate('/login', { replace: true });
+    }, result.requiresApproval ? 900 : 350);
   }
 
   return (
@@ -85,7 +89,7 @@ export default function RegisterPage() {
           disabled={loading}
           className="w-full rounded-2xl bg-emerald-500 px-5 py-3 font-semibold text-neutral-950 transition hover:scale-[1.01] disabled:opacity-60"
         >
-          {loading ? 'Criando conta...' : 'Criar conta e entrar'}
+          {loading ? 'Enviando cadastro...' : 'Criar cadastro'}
         </button>
       </div>
 

@@ -60,6 +60,7 @@ function mapClientProfile(snapshot) {
     name: data.name || data.email || 'Cliente',
     email: data.email || '',
     businessType: data.businessType || 'Operacao',
+    approvalStatus: data.approvalStatus || 'approved',
   };
 }
 
@@ -104,7 +105,15 @@ export function subscribeClientAccounts(onChange) {
   const clientsQuery = query(collection(db, 'users'), where('role', '==', 'client'));
 
   return onSnapshot(clientsQuery, (snapshot) => {
-    const clients = snapshot.docs.map(mapClientProfile).sort((a, b) => a.name.localeCompare(b.name));
+    const clients = snapshot.docs.map(mapClientProfile).sort((a, b) => {
+      if (a.approvalStatus !== b.approvalStatus) {
+        if (a.approvalStatus === 'pending') return -1;
+        if (b.approvalStatus === 'pending') return 1;
+      }
+
+      return a.name.localeCompare(b.name);
+    });
+
     onChange(clients);
   });
 }
@@ -140,6 +149,21 @@ export function subscribeClientData(clientId, onChange) {
     unsubscribeShopping();
     unsubscribeChallenges();
   };
+}
+
+export async function updateClientApprovalStatus(clientId, approvalStatus, adminId) {
+  assertFirebaseReady();
+
+  await setDoc(
+    userDocRef(clientId),
+    {
+      approvalStatus,
+      approvedBy: adminId || null,
+      approvedAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+    },
+    { merge: true }
+  );
 }
 
 export async function addInventoryItem(clientId, item) {
@@ -223,3 +247,4 @@ export async function getUserProfile(uid) {
   if (!snapshot.exists()) return null;
   return snapshot.data();
 }
+

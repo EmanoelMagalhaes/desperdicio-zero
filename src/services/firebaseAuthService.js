@@ -5,7 +5,13 @@ import {
   signOut,
 } from 'firebase/auth';
 import { doc, getDoc, serverTimestamp, setDoc } from 'firebase/firestore';
-import { assertFirebaseReady, auth, db } from './firebaseClient';
+import { assertFirebaseReady, auth, createSecondaryAuthApp, db, disposeFirebaseApp } from './firebaseClient';
+
+const APPROVAL_STATUS = {
+  PENDING: 'pending',
+  APPROVED: 'approved',
+  REJECTED: 'rejected',
+};
 
 function mapAuthError(error) {
   const code = error?.code || '';
@@ -60,13 +66,44 @@ function toSessionAccount(uid, profile) {
     name: profile.name || profile.email || 'Usuario',
     email: profile.email || '',
     businessType: profile.businessType || 'Operacao',
+    approvalStatus: profile.approvalStatus || APPROVAL_STATUS.APPROVED,
   };
+}
+
+function approvalError(status) {
+  if (status === APPROVAL_STATUS.PENDING) {
+    return 'Seu cadastro esta pendente de aprovacao do administrador.';
+  }
+
+  if (status === APPROVAL_STATUS.REJECTED) {
+    return 'Seu cadastro foi reprovado. Entre em contato com o administrador.';
+  }
+
+  return 'Sua conta de cliente ainda nao foi aprovada.';
 }
 
 async function getProfile(uid) {
   const snapshot = await getDoc(doc(db, 'users', uid));
   if (!snapshot.exists()) return null;
   return snapshot.data();
+}
+
+async function createClientProfile(uid, form, approvalStatus, metadata = {}) {
+  const { name, email, businessType } = form;
+
+  const profile = {
+    role: 'client',
+    name,
+    email,
+    businessType,
+    approvalStatus,
+    createdAt: serverTimestamp(),
+    ...metadata,
+  };
+
+  await setDoc(doc(db, 'users', uid), profile, { merge: true });
+
+  return profile;
 }
 
 export async function loginWithFirebase(mode, email, password) {
@@ -94,6 +131,14 @@ export async function loginWithFirebase(mode, email, password) {
       return { ok: false, error: 'Use o acesso de administrador para esta conta.' };
     }
 
+    if (mode === 'client') {
+      const status = profile.approvalStatus || APPROVAL_STATUS.APPROVED;
+      if (status !== APPROVAL_STATUS.APPROVED) {
+        await signOut(auth);
+        return { ok: false, error: approvalError(status) };
+      }
+    }
+
     return { ok: true, account: toSessionAccount(credential.user.uid, profile) };
   } catch (error) {
     console.error('loginWithFirebase error:', error);
@@ -113,15 +158,63 @@ export async function registerClientWithFirebase(form) {
     const credential = await createUserWithEmailAndPassword(auth, email, password);
     const uid = credential.user.uid;
 
-    const profile = {
-      role: 'client',
-      name,
-      email,
-      businessType,
-      createdAt: serverTimestamp(),
-    };
+    await createClientProfile(
+      uid,
+      { name, email, businessType },
+      APPROVAL_STATUS.PENDING,
+      { requestedAt: serverTimestamp() }
+    );
 
-    await setDoc(doc(db, 'users', uid), profile, { merge: true });
+    await signOut(auth);
+
+    return {
+      ok: true,
+      requiresApproval: true,
+      message: 'Cadastro criado. Aguarde aprovacao do administrador para acessar o sistema.',
+    };
+  } catch (error) {
+    console.error('registerClientWithFirebase error:', error);
+    return { ok: false, error: mapAuthError(error) };
+  }
+}
+
+export async function createClientByAdminWithFirebase(form, adminAccount) {
+  const { name, email, password, businessType } = form;
+
+  if (!adminAccount || adminAccount.role !== 'admin') {
+    return { ok: false, error: 'Apenas administradores podem cadastrar clientes.' };
+  }
+
+  if (!name || !email || !password) {
+    return { ok: false, error: 'Preencha nome, e-mail e senha para cadastrar o cliente.' };
+  }
+
+  let secondaryApp = null;
+  let secondaryAuth = null;
+
+  try {
+    assertFirebaseReady();
+
+    const secondaryContext = createSecondaryAuthApp();
+    secondaryApp = secondaryContext.app;
+    secondaryAuth = secondaryContext.auth;
+
+    const credential = await createUserWithEmailAndPassword(secondaryAuth, email, password);
+    const uid = credential.user.uid;
+
+    await createClientProfile(
+      uid,
+      { name, email, businessType },
+      APPROVAL_STATUS.APPROVED,
+      {
+        approvedAt: serverTimestamp(),
+        approvedBy: adminAccount.id,
+        createdByAdminAt: serverTimestamp(),
+      }
+    );
+
+    await signOut(secondaryAuth);
+    await disposeFirebaseApp(secondaryApp);
 
     return {
       ok: true,
@@ -130,10 +223,28 @@ export async function registerClientWithFirebase(form) {
         name,
         email,
         businessType,
+        approvalStatus: APPROVAL_STATUS.APPROVED,
       }),
     };
   } catch (error) {
-    console.error('registerClientWithFirebase error:', error);
+    console.error('createClientByAdminWithFirebase error:', error);
+
+    if (secondaryAuth) {
+      try {
+        await signOut(secondaryAuth);
+      } catch {
+        // noop
+      }
+    }
+
+    if (secondaryApp) {
+      try {
+        await disposeFirebaseApp(secondaryApp);
+      } catch {
+        // noop
+      }
+    }
+
     return { ok: false, error: mapAuthError(error) };
   }
 }
@@ -154,6 +265,12 @@ export function subscribeAuthSession(onChange) {
         return;
       }
 
+      if (profile.role === 'client' && profile.approvalStatus && profile.approvalStatus !== APPROVAL_STATUS.APPROVED) {
+        await signOut(auth);
+        onChange(null);
+        return;
+      }
+
       onChange(toSessionAccount(user.uid, profile));
     } catch {
       onChange(null);
@@ -165,3 +282,6 @@ export async function logoutFirebase() {
   assertFirebaseReady();
   await signOut(auth);
 }
+
+export { APPROVAL_STATUS };
+

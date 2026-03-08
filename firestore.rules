@@ -9,26 +9,46 @@ service cloud.firestore {
       return isSignedIn() && request.auth.uid == uid;
     }
 
+    function userDoc(uid) {
+      return get(/databases/$(database)/documents/users/$(uid));
+    }
+
     function userRole() {
-      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
+      return userDoc(request.auth.uid).data.role;
     }
 
     function isAdmin() {
       return isSignedIn() && userRole() == 'admin';
     }
 
+    function isApprovedClient(uid) {
+      return isOwner(uid) && userDoc(uid).data.approvalStatus == 'approved';
+    }
+
+    function isClientSelfRegistration(uid) {
+      return isOwner(uid)
+        && request.resource.data.role == 'client'
+        && request.resource.data.approvalStatus == 'pending';
+    }
+
+    function isOwnerSafeProfileUpdate(uid) {
+      return isOwner(uid)
+        && request.resource.data.role == resource.data.role
+        && request.resource.data.approvalStatus == resource.data.approvalStatus;
+    }
+
     match /users/{uid} {
-      allow create: if isOwner(uid);
+      allow create: if isClientSelfRegistration(uid) || isAdmin();
       allow read: if isOwner(uid) || isAdmin();
-      allow update: if isOwner(uid) || isAdmin();
+      allow update: if isAdmin() || isOwnerSafeProfileUpdate(uid);
       allow delete: if false;
     }
 
     match /clients/{clientId} {
-      allow read, write: if isOwner(clientId) || isAdmin();
+      allow read, write: if isApprovedClient(clientId) || isAdmin();
 
       match /{document=**} {
-        allow read, write: if isOwner(clientId) || isAdmin();
+        allow read, write: if isApprovedClient(clientId) || isAdmin();
       }
     }
 

@@ -107,7 +107,7 @@ export default function LoginPage() {
             <p className="mt-2 text-white/62">
               {mode === 'admin'
                 ? 'Acompanhe indicadores e gerencie operacao dos clientes.'
-                : 'Gerencie despensa, compras, receitas e desafios da sua operacao.'}
+                : 'Gerencie despensa, compras, receitas e desafios da sua operacao. Novos cadastros precisam de aprovacao administrativa.'}
             </p>
           </div>
 
@@ -156,3 +156,4 @@ export default function LoginPage() {
     </div>
   );
 }
+

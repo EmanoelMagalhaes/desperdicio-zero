@@ -11,6 +11,7 @@ export const defaultState = {
       email: 'cliente@desperdiciozero.com',
       password: '123456',
       businessType: 'Restaurante',
+      approvalStatus: 'approved',
     },
     {
       id: 'cliente-demo-2',
@@ -19,6 +20,7 @@ export const defaultState = {
       email: 'cafeteria@desperdiciozero.com',
       password: '123456',
       businessType: 'Cafeteria',
+      approvalStatus: 'approved',
     },
   ],
   adminAccounts: [

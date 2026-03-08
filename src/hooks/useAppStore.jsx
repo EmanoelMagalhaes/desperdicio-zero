@@ -1,7 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { STORAGE_KEY, defaultState } from '../data/defaultState';
-import { loginWithMode, registerClientAccount } from '../services/authService';
-import { loginWithFirebase, logoutFirebase, registerClientWithFirebase, subscribeAuthSession } from '../services/firebaseAuthService';
+import { createClientAccountByAdmin, loginWithMode, registerClientAccount } from '../services/authService';
+import { createClientByAdminWithFirebase, loginWithFirebase, logoutFirebase, registerClientWithFirebase, subscribeAuthSession } from '../services/firebaseAuthService';
 import {
   addInventoryItem,
   addShoppingItem,
@@ -10,6 +10,7 @@ import {
   loadClientData,
   subscribeClientAccounts,
   subscribeClientData,
+  updateClientApprovalStatus,
   toggleChallengeItem,
   toggleShoppingItem,
 } from '../services/firebaseDataService';
@@ -222,6 +223,11 @@ export function AppStoreProvider({ children }) {
         if (!result.ok) return result;
 
         setSession(result.account);
+
+        if (result.account.role === 'admin') {
+          setAdminSelectedClientId((prev) => prev || state.clientAccounts[0]?.id || '');
+        }
+
         return result;
       }
 
@@ -241,27 +247,82 @@ export function AppStoreProvider({ children }) {
   const register = useCallback(
     async (form) => {
       if (firebaseMode) {
-        const result = await registerClientWithFirebase(form);
-        if (!result.ok) return result;
-
-        setSession(result.account);
-        setState((prev) => ({
-          ...prev,
-          clientAccounts: upsertClientAccount(prev.clientAccounts, result.account),
-        }));
-
-        return result;
+        return registerClientWithFirebase(form);
       }
 
       const result = registerClientAccount(state, form);
       if (!result.ok) return result;
 
       setState(result.nextState);
-      setSession(result.account);
+      return result;
+    },
+    [firebaseMode, state]
+  );
+
+  const createClientByAdmin = useCallback(
+    async (form) => {
+      if (session?.role !== 'admin') {
+        return { ok: false, error: 'Apenas administradores podem cadastrar clientes.' };
+      }
+
+      if (firebaseMode) {
+        const result = await createClientByAdminWithFirebase(form, session);
+        if (!result.ok) return result;
+
+        setState((prev) => ({
+          ...prev,
+          clientAccounts: upsertClientAccount(prev.clientAccounts, result.account),
+          inventories: {
+            ...prev.inventories,
+            [result.account.id]: prev.inventories[result.account.id] || [],
+          },
+          shoppingLists: {
+            ...prev.shoppingLists,
+            [result.account.id]: prev.shoppingLists[result.account.id] || [],
+          },
+          challenges: {
+            ...prev.challenges,
+            [result.account.id]: prev.challenges[result.account.id] || { completed: [], current: [] },
+          },
+        }));
+
+        return result;
+      }
+
+      const result = createClientAccountByAdmin(state, form);
+      if (!result.ok) return result;
+
+      setState(result.nextState);
 
       return { ok: true, account: result.account };
     },
-    [firebaseMode, state]
+    [firebaseMode, session, state]
+  );
+
+  const setClientApproval = useCallback(
+    async (clientId, approvalStatus) => {
+      if (!clientId) {
+        return { ok: false, error: 'Cliente invalido.' };
+      }
+
+      if (session?.role !== 'admin') {
+        return { ok: false, error: 'Apenas administradores podem aprovar clientes.' };
+      }
+
+      if (firebaseMode) {
+        await updateClientApprovalStatus(clientId, approvalStatus, session.id);
+      }
+
+      setState((prev) => ({
+        ...prev,
+        clientAccounts: prev.clientAccounts.map((client) =>
+          client.id === clientId ? { ...client, approvalStatus } : client
+        ),
+      }));
+
+      return { ok: true };
+    },
+    [firebaseMode, session]
   );
 
   const logout = useCallback(async () => {
@@ -464,6 +525,8 @@ export function AppStoreProvider({ children }) {
       setAdminSelectedClientId,
       login,
       register,
+      createClientByAdmin,
+      setClientApproval,
       logout,
       addInventory,
       deleteInventory,
@@ -490,6 +553,8 @@ export function AppStoreProvider({ children }) {
       adminSelectedClientId,
       login,
       register,
+      createClientByAdmin,
+      setClientApproval,
       logout,
       addInventory,
       deleteInventory,
@@ -514,3 +579,9 @@ export function useAppStore() {
 
   return context;
 }
+
+
+
+
+
+
