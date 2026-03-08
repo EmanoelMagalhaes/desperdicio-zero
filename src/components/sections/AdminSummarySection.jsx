@@ -45,7 +45,30 @@ export default function AdminSummarySection({ state }) {
           <div className="text-sm text-white/55">Acesso rapido aos dados operacionais.</div>
         </div>
 
-        <div className="overflow-x-auto rounded-3xl border border-white/10">
+        <div className="space-y-3 md:hidden">
+          {clientSummary.map((client) => (
+            <div key={`mobile-${client.id}`} className="rounded-2xl border border-white/10 bg-neutral-900 p-4">
+              <div className="text-base font-semibold">{client.name}</div>
+              <div className="text-sm text-white/55">{client.businessType}</div>
+              <div className="mt-3 grid grid-cols-3 gap-3 text-center text-sm">
+                <div className="rounded-xl bg-white/[0.04] p-2">
+                  <div className="text-xs text-white/50">Produtos</div>
+                  <div className="font-semibold">{client.productCount}</div>
+                </div>
+                <div className="rounded-xl bg-white/[0.04] p-2">
+                  <div className="text-xs text-white/50">Criticos</div>
+                  <div className="font-semibold">{client.criticalCount}</div>
+                </div>
+                <div className="rounded-xl bg-white/[0.04] p-2">
+                  <div className="text-xs text-white/50">Compras</div>
+                  <div className="font-semibold">{client.shoppingCount}</div>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div className="hidden overflow-x-auto rounded-3xl border border-white/10 md:block">
           <div className="grid min-w-[760px] grid-cols-5 gap-4 bg-neutral-900 px-4 py-3 text-sm font-semibold text-white/70">
             <div>Cliente</div>
             <div>Tipo</div>
