@@ -496,7 +496,7 @@ export function AppStoreProvider({ children }) {
 
       const orderPayload = {
         restaurantId,
-        restaurantName: cart.restaurantName,
+        restaurantName: cart.restaurantName || 'Restaurante',
         consumerId,
         consumerIsGuest: Boolean(isGuest),
         consumerName: payload.consumerName,
