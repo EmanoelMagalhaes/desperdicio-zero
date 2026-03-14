@@ -6,9 +6,22 @@ const STATUS_TONES = {
   confirmed: 'bg-emerald-500/15 text-emerald-200',
   preparing: 'bg-sky-500/15 text-sky-200',
   ready: 'bg-indigo-500/15 text-indigo-200',
-  finalized: 'bg-emerald-500/15 text-emerald-200',
+  completed: 'bg-emerald-500/15 text-emerald-200',
   cancelled: 'bg-red-500/15 text-red-200',
 };
+
+const STATUS_LABELS = {
+  pending: 'Pendente',
+  confirmed: 'Confirmado',
+  preparing: 'Em preparo',
+  ready: 'Pronto',
+  completed: 'Concluido',
+  cancelled: 'Cancelado',
+};
+
+function getStatusLabel(status) {
+  return STATUS_LABELS[status] || 'Pendente';
+}
 
 function formatCurrency(value) {
   const amount = Number(value || 0);
@@ -46,7 +59,7 @@ export default function MyOrdersPage() {
                 </div>
               </div>
               <span className={`rounded-full px-3 py-1 text-xs ${STATUS_TONES[order.status] || 'bg-white/10 text-white/70'}`}>
-                {order.status}
+                {getStatusLabel(order.status)}
               </span>
             </div>
 
