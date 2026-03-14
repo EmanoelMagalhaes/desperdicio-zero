@@ -101,11 +101,13 @@ export function AppStoreProvider({ children }) {
   const [cart, setCart] = useState({ restaurantId: '', restaurantName: '', items: [] });
   const [cartWarning, setCartWarning] = useState('');
   const [ready, setReady] = useState(false);
+  const [authReady, setAuthReady] = useState(!backendAdapter.isFirebase());
 
   useEffect(() => {
     if (firebaseMode) {
       setState((prev) => ({ ...prev, ...createEmptyOperationalState() }));
       setReady(true);
+      setAuthReady(false);
       return;
     }
 
@@ -113,6 +115,7 @@ export function AppStoreProvider({ children }) {
     setState(loaded);
     setAdminSelectedClientId('cliente-demo');
     setReady(true);
+    setAuthReady(true);
   }, [firebaseMode]);
 
   useEffect(() => {
@@ -123,7 +126,13 @@ export function AppStoreProvider({ children }) {
   useEffect(() => {
     if (!firebaseMode) return;
 
+    let hasResolved = false;
     const unsubscribe = subscribeAuthSession((account) => {
+      if (!hasResolved) {
+        setAuthReady(true);
+        hasResolved = true;
+      }
+
       if (!account) {
         setSession(null);
         setState((prev) => ({ ...prev, ...createEmptyOperationalState() }));
@@ -1020,6 +1029,7 @@ export function AppStoreProvider({ children }) {
       cartWarning,
       ordersStatus,
       ordersError,
+      authReady,
       demoInventory,
       demoShoppingList,
       demoChallenges,
@@ -1096,6 +1106,7 @@ export function AppStoreProvider({ children }) {
       cartWarning,
       ordersStatus,
       ordersError,
+      authReady,
     ]
   );
 

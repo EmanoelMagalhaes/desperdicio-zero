@@ -3,9 +3,9 @@ import { useAppStore } from '../../hooks/useAppStore';
 import { getDefaultRouteForRole, hasAnyPermission, normalizeRole } from '../../modules/rbac/rbac';
 
 export default function ProtectedRoute({ allowRoles = [], allowPermissions = [] }) {
-  const { ready, session, sessionPermissions = [] } = useAppStore();
+  const { ready, authReady, session, sessionPermissions = [] } = useAppStore();
 
-  if (!ready) return null;
+  if (!ready || !authReady) return null;
 
   if (!session) {
     return <Navigate to="/login" replace />;
