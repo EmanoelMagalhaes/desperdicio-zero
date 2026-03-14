@@ -11,12 +11,26 @@ function feedbackTone(type) {
   return 'border border-emerald-500/20 bg-emerald-500/10 text-emerald-100';
 }
 
-export default function AppShell({ menuItems, subtitle }) {
+export default function AppShell({
+  menuItems,
+  subtitle,
+  showBackup = true,
+  statusLabel = 'item(ns) com atencao',
+  statusValue,
+}) {
   const { session, pendingCount, logout, activeClient, exportBackup } = useAppStore();
   const [feedback, setFeedback] = useState({ type: '', text: '' });
 
-  const sessionLabel = session?.role === 'admin' ? 'Administrador' : 'Cliente';
+  const sessionLabel =
+    session?.role === 'admin'
+      ? 'Administrador'
+      : session?.role === 'consumer'
+        ? 'Consumidor'
+        : session?.role === 'restaurant'
+          ? 'Restaurante'
+          : 'Cliente';
   const contextLabel = session?.role === 'admin' && activeClient ? `Cliente ativo: ${activeClient.name}` : subtitle;
+  const resolvedStatusValue = typeof statusValue === 'number' ? statusValue : pendingCount;
 
   async function handleExport() {
     try {
@@ -85,13 +99,15 @@ export default function AppShell({ menuItems, subtitle }) {
           </div>
 
           <div className="space-y-2 border-t border-white/10 p-4">
-            <button
-              onClick={handleExport}
-              className="flex w-full items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 text-white/85 transition hover:bg-white/[0.08]"
-            >
-              <Download size={16} />
-              Exportar backup
-            </button>
+            {showBackup ? (
+              <button
+                onClick={handleExport}
+                className="flex w-full items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 text-white/85 transition hover:bg-white/[0.08]"
+              >
+                <Download size={16} />
+                Exportar backup
+              </button>
+            ) : null}
             <button
               onClick={logout}
               className="flex w-full items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 text-white/80 transition hover:bg-white/[0.08]"
@@ -112,17 +128,19 @@ export default function AppShell({ menuItems, subtitle }) {
 
               <div className="flex items-center gap-2 sm:gap-3">
                 <div className="hidden rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-2 text-sm text-white/70 sm:block">
-                  {pendingCount} item(ns) com atencao
+                  {resolvedStatusValue} {statusLabel}
                 </div>
 
-                <button
-                  onClick={handleExport}
-                  className="inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.03] text-white/85 sm:hidden"
-                  aria-label="Exportar backup"
-                  title="Exportar backup"
-                >
-                  <Download size={16} />
-                </button>
+                {showBackup ? (
+                  <button
+                    onClick={handleExport}
+                    className="inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.03] text-white/85 sm:hidden"
+                    aria-label="Exportar backup"
+                    title="Exportar backup"
+                  >
+                    <Download size={16} />
+                  </button>
+                ) : null}
                 <button
                   onClick={logout}
                   className="inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-emerald-500 text-neutral-950 sm:hidden"
@@ -132,12 +150,14 @@ export default function AppShell({ menuItems, subtitle }) {
                   <LogOut size={16} />
                 </button>
 
-                <button
-                  onClick={handleExport}
-                  className="hidden rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-2 text-sm font-semibold text-white/85 transition hover:bg-white/[0.08] sm:inline-flex"
-                >
-                  Exportar backup
-                </button>
+                {showBackup ? (
+                  <button
+                    onClick={handleExport}
+                    className="hidden rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-2 text-sm font-semibold text-white/85 transition hover:bg-white/[0.08] sm:inline-flex"
+                  >
+                    Exportar backup
+                  </button>
+                ) : null}
                 <button
                   onClick={logout}
                   className="hidden rounded-2xl bg-emerald-500 px-4 py-2 font-semibold text-neutral-950 transition hover:scale-[1.02] sm:inline-flex"
@@ -149,7 +169,7 @@ export default function AppShell({ menuItems, subtitle }) {
 
             <div className="mx-auto max-w-7xl px-4 pb-3 sm:hidden md:px-6">
               <div className="inline-flex rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-xs text-white/70">
-                {pendingCount} item(ns) com atencao
+                {resolvedStatusValue} {statusLabel}
               </div>
             </div>
 

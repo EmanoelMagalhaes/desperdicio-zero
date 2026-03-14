@@ -16,8 +16,14 @@ function baseClientChallenges() {
   };
 }
 
+function resolveAccountsByMode(state, mode) {
+  if (mode === 'admin') return state.adminAccounts;
+  if (mode === 'consumer') return state.consumerAccounts || [];
+  return state.clientAccounts;
+}
+
 export function loginWithMode(state, mode, email, password) {
-  const source = mode === 'admin' ? state.adminAccounts : state.clientAccounts;
+  const source = resolveAccountsByMode(state, mode);
   const account = source.find((item) => item.email === email && item.password === password);
 
   if (!account) {
@@ -79,6 +85,36 @@ export function registerClientAccount(state, form) {
     requiresApproval: true,
     message: 'Cadastro criado. Aguarde aprovacao do administrador para acessar o sistema.',
     nextState,
+  };
+}
+
+export function registerConsumerAccount(state, form) {
+  const { name, email, password } = form;
+
+  if (!name || !email || !password) {
+    return { ok: false, error: 'Preencha nome, e-mail e senha para criar sua conta.' };
+  }
+
+  if ((state.consumerAccounts || []).some((account) => account.email === email)) {
+    return { ok: false, error: 'Esse e-mail ja esta cadastrado.' };
+  }
+
+  const id = createId('consumidor');
+  const newConsumer = {
+    id,
+    role: 'consumer',
+    name,
+    email,
+    password,
+  };
+
+  return {
+    ok: true,
+    account: newConsumer,
+    nextState: {
+      ...state,
+      consumerAccounts: [...(state.consumerAccounts || []), newConsumer],
+    },
   };
 }
 

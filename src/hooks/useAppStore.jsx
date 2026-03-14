@@ -1,7 +1,20 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { STORAGE_KEY, defaultState } from '../data/defaultState';
-import { createClientAccountByAdmin, loginWithMode, registerClientAccount } from '../services/authService';
-import { createClientByAdminWithFirebase, loginWithFirebase, logoutFirebase, registerClientWithFirebase, sendPasswordResetWithFirebase, subscribeAuthSession } from '../services/firebaseAuthService';
+import {
+  createClientAccountByAdmin,
+  loginWithMode,
+  registerClientAccount,
+  registerConsumerAccount,
+} from '../services/authService';
+import {
+  createClientByAdminWithFirebase,
+  loginWithFirebase,
+  logoutFirebase,
+  registerClientWithFirebase,
+  registerConsumerWithFirebase,
+  sendPasswordResetWithFirebase,
+  subscribeAuthSession,
+} from '../services/firebaseAuthService';
 import {
   addInventoryItem,
   addShoppingItem,
@@ -16,6 +29,8 @@ import {
 } from '../services/firebaseDataService';
 import { backendAdapter } from '../services/backendAdapter';
 import { loadState, persistState } from '../services/storageService';
+import { subscribeOffers } from '../services/offersService';
+import { subscribeOrdersByConsumer } from '../services/ordersService';
 import { daysUntil } from '../utils/date';
 import { downloadJson } from '../utils/export';
 import { createId } from '../utils/ids';
@@ -38,9 +53,12 @@ function createEmptyOperationalState() {
   return {
     clientAccounts: [],
     adminAccounts: [],
+    consumerAccounts: [],
     inventories: {},
     shoppingLists: {},
     challenges: {},
+    offers: [],
+    orders: [],
   };
 }
 
@@ -50,6 +68,10 @@ export function AppStoreProvider({ children }) {
   const [state, setState] = useState(defaultState);
   const [session, setSession] = useState(null);
   const [adminSelectedClientId, setAdminSelectedClientId] = useState('');
+  const [offersStatus, setOffersStatus] = useState('idle');
+  const [offersError, setOffersError] = useState('');
+  const [ordersStatus, setOrdersStatus] = useState('idle');
+  const [ordersError, setOrdersError] = useState('');
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
@@ -183,6 +205,55 @@ export function AppStoreProvider({ children }) {
     }
   }, [session, state.clientAccounts, adminSelectedClientId]);
 
+  useEffect(() => {
+    if (!firebaseMode) {
+      setOffersStatus('ready');
+      setOffersError('');
+      return;
+    }
+
+    setOffersStatus('loading');
+    const unsubscribe = subscribeOffers(
+      (items) => {
+        setState((prev) => ({ ...prev, offers: items }));
+        setOffersStatus('ready');
+        setOffersError('');
+      },
+      () => {
+        setOffersStatus('error');
+        setOffersError('Nao foi possivel carregar ofertas no Firebase.');
+      }
+    );
+
+    return unsubscribe;
+  }, [firebaseMode]);
+
+  useEffect(() => {
+    if (!firebaseMode || session?.role !== 'consumer') {
+      if (!firebaseMode) {
+        setOrdersStatus('ready');
+        setOrdersError('');
+      }
+      return;
+    }
+
+    setOrdersStatus('loading');
+    const unsubscribe = subscribeOrdersByConsumer(
+      session.id,
+      (items) => {
+        setState((prev) => ({ ...prev, orders: items }));
+        setOrdersStatus('ready');
+        setOrdersError('');
+      },
+      () => {
+        setOrdersStatus('error');
+        setOrdersError('Nao foi possivel carregar pedidos no Firebase.');
+      }
+    );
+
+    return unsubscribe;
+  }, [firebaseMode, session?.role, session?.id]);
+
   const activeClientId = useMemo(() => {
     if (session?.role === 'client') return session.id;
     if (session?.role === 'admin') return adminSelectedClientId || state.clientAccounts[0]?.id || '';
@@ -200,6 +271,13 @@ export function AppStoreProvider({ children }) {
     () => state.challenges[activeClientId] || { completed: [], current: [] },
     [state.challenges, activeClientId]
   );
+
+  const offers = useMemo(() => state.offers || [], [state.offers]);
+  const orders = useMemo(() => state.orders || [], [state.orders]);
+  const consumerOrders = useMemo(() => {
+    if (!session?.id) return [];
+    return orders.filter((order) => order.consumerId === session.id);
+  }, [orders, session?.id]);
 
   const demoInventory = defaultState.inventories['cliente-demo'] || [];
   const demoShoppingList = defaultState.shoppingLists['cliente-demo'] || [];
@@ -258,6 +336,24 @@ export function AppStoreProvider({ children }) {
 
       setState(result.nextState);
       return result;
+    },
+    [firebaseMode, state]
+  );
+
+  const registerConsumer = useCallback(
+    async (form) => {
+      if (firebaseMode) {
+        return registerConsumerWithFirebase(form);
+      }
+
+      const result = registerConsumerAccount(state, form);
+      if (!result.ok) return result;
+
+      setState(result.nextState);
+      return {
+        ok: true,
+        message: 'Cadastro criado. Agora voce ja pode entrar como consumidor.',
+      };
     },
     [firebaseMode, state]
   );
@@ -539,6 +635,12 @@ export function AppStoreProvider({ children }) {
       shoppingList,
       challengeState,
       pendingCount,
+      offers,
+      offersStatus,
+      offersError,
+      consumerOrders,
+      ordersStatus,
+      ordersError,
       demoInventory,
       demoShoppingList,
       demoChallenges,
@@ -546,6 +648,7 @@ export function AppStoreProvider({ children }) {
       setAdminSelectedClientId,
       login,
       register,
+      registerConsumer,
       requestPasswordReset,
       createClientByAdmin,
       setClientApproval,
@@ -576,6 +679,7 @@ export function AppStoreProvider({ children }) {
       adminSelectedClientId,
       login,
       register,
+      registerConsumer,
       requestPasswordReset,
       createClientByAdmin,
       setClientApproval,
@@ -588,6 +692,12 @@ export function AppStoreProvider({ children }) {
       toggleChallenge,
       exportBackup,
       firebaseMode,
+      offers,
+      offersStatus,
+      offersError,
+      consumerOrders,
+      ordersStatus,
+      ordersError,
     ]
   );
 
