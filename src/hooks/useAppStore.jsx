@@ -19,6 +19,7 @@ import { loadState, persistState } from '../services/storageService';
 import { daysUntil } from '../utils/date';
 import { downloadJson } from '../utils/export';
 import { createId } from '../utils/ids';
+import { getPermissionsForRole } from '../modules/rbac/rbac';
 
 const AppStoreContext = createContext(null);
 
@@ -215,6 +216,8 @@ export function AppStoreProvider({ children }) {
       .flat()
       .filter((item) => daysUntil(item.expiry) <= 2).length;
   }, [session, state.inventories, inventory]);
+
+  const sessionPermissions = useMemo(() => getPermissionsForRole(session?.role), [session]);
 
   const login = useCallback(
     async (mode, email, password) => {
@@ -529,6 +532,7 @@ export function AppStoreProvider({ children }) {
       ready,
       state,
       session,
+      sessionPermissions,
       activeClientId,
       activeClient,
       inventory,
@@ -559,6 +563,7 @@ export function AppStoreProvider({ children }) {
       ready,
       state,
       session,
+      sessionPermissions,
       activeClientId,
       activeClient,
       inventory,

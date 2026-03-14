@@ -1,13 +1,16 @@
 import { Navigate, Outlet } from 'react-router-dom';
 import { useAppStore } from '../../hooks/useAppStore';
+import { getDefaultRouteForRole, normalizeRole } from '../../modules/rbac/rbac';
 
 export default function GuestRoute() {
   const { ready, session } = useAppStore();
 
   if (!ready) return null;
 
-  if (session?.role === 'admin') return <Navigate to="/admin/dashboard" replace />;
-  if (session?.role === 'client') return <Navigate to="/app/dashboard" replace />;
+  const role = normalizeRole(session?.role);
+  if (role) {
+    return <Navigate to={getDefaultRouteForRole(role)} replace />;
+  }
 
   return <Outlet />;
 }

@@ -10,6 +10,7 @@ import {
 } from 'firebase/auth';
 import { doc, getDoc, serverTimestamp, setDoc } from 'firebase/firestore';
 import { assertFirebaseReady, auth, createSecondaryAuthApp, db, disposeFirebaseApp } from './firebaseClient';
+import { normalizeRole } from '../types/roles';
 
 const APPROVAL_STATUS = {
   PENDING: 'pending',
@@ -67,9 +68,11 @@ function mapAuthError(error) {
 }
 
 function toSessionAccount(uid, profile, emailVerified = false) {
+  const normalizedRole = normalizeRole(profile.role);
+
   return {
     id: uid,
-    role: profile.role,
+    role: normalizedRole || profile.role,
     name: profile.name || profile.email || 'Usuario',
     email: profile.email || '',
     businessType: profile.businessType || 'Operacao',
@@ -129,12 +132,18 @@ export async function loginWithFirebase(mode, email, password) {
       return { ok: false, error: 'Perfil nao encontrado no banco. Verifique o cadastro.' };
     }
 
-    if (mode === 'admin' && profile.role !== 'admin') {
+    const normalizedRole = normalizeRole(profile.role);
+    if (!normalizedRole) {
+      await signOut(auth);
+      return { ok: false, error: 'Perfil com role invalido. Contate o administrador.' };
+    }
+
+    if (mode === 'admin' && normalizedRole !== 'admin') {
       await signOut(auth);
       return { ok: false, error: 'Esta conta nao possui acesso administrativo.' };
     }
 
-    if (mode === 'client' && profile.role !== 'client') {
+    if (mode === 'client' && normalizedRole !== 'client') {
       await signOut(auth);
       return { ok: false, error: 'Use o acesso de administrador para esta conta.' };
     }
@@ -423,7 +432,14 @@ export function subscribeAuthSession(onChange) {
         return;
       }
 
-      if (profile.role === 'client') {
+      const normalizedRole = normalizeRole(profile.role);
+      if (!normalizedRole) {
+        await signOut(auth);
+        onChange(null);
+        return;
+      }
+
+      if (normalizedRole === 'client') {
         await reload(user);
 
         if (!user.emailVerified) {
