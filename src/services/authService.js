@@ -89,10 +89,10 @@ export function registerClientAccount(state, form) {
 }
 
 export function registerConsumerAccount(state, form) {
-  const { name, email, password } = form;
+  const { name, email, password, address } = form;
 
-  if (!name || !email || !password) {
-    return { ok: false, error: 'Preencha nome, e-mail e senha para criar sua conta.' };
+  if (!name || !email || !password || !address) {
+    return { ok: false, error: 'Preencha nome, e-mail, endereco e senha para criar sua conta.' };
   }
 
   if ((state.consumerAccounts || []).some((account) => account.email === email)) {
@@ -106,6 +106,7 @@ export function registerConsumerAccount(state, form) {
     name,
     email,
     password,
+    address,
   };
 
   return {

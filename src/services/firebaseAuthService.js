@@ -118,12 +118,13 @@ async function createClientProfile(firestoreDb, uid, form, approvalStatus, metad
 }
 
 async function createConsumerProfile(firestoreDb, uid, form, metadata = {}) {
-  const { name, email } = form;
+  const { name, email, address } = form;
 
   const profile = {
     role: 'consumer',
     name,
     email,
+    address,
     createdAt: serverTimestamp(),
     ...metadata,
   };
@@ -356,10 +357,10 @@ export async function registerClientWithFirebase(form) {
 }
 
 export async function registerConsumerWithFirebase(form) {
-  const { name, email, password } = form;
+  const { name, email, password, address } = form;
 
-  if (!name || !email || !password) {
-    return { ok: false, error: 'Preencha nome, e-mail e senha para criar sua conta.' };
+  if (!name || !email || !password || !address) {
+    return { ok: false, error: 'Preencha nome, e-mail, endereco e senha para criar sua conta.' };
   }
 
   let secondaryApp = null;
@@ -381,7 +382,7 @@ export async function registerConsumerWithFirebase(form) {
     await createConsumerProfile(
       secondaryDb,
       credential.user.uid,
-      { name, email },
+      { name, email, address },
       {
         emailVerified: false,
         verificationEmailSentAt: serverTimestamp(),
@@ -408,7 +409,7 @@ export async function registerConsumerWithFirebase(form) {
           await createConsumerProfile(
             secondaryDb,
             recoveryUser.uid,
-            { name, email },
+            { name, email, address },
             {
               emailVerified: Boolean(recoveryUser.emailVerified),
               verificationEmailSentAt: serverTimestamp(),
@@ -426,6 +427,7 @@ export async function registerConsumerWithFirebase(form) {
             {
               name,
               email,
+              address,
               emailVerified: Boolean(recoveryUser.emailVerified),
               verificationEmailSentAt: serverTimestamp(),
               updatedAt: serverTimestamp(),

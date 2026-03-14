@@ -5,7 +5,7 @@ import { CheckCircle2, Heart, UserPlus } from 'lucide-react';
 import { useAppStore } from '../../hooks/useAppStore';
 
 export default function ConsumerRegisterPage() {
-  const [form, setForm] = useState({ name: '', email: '', password: '' });
+  const [form, setForm] = useState({ name: '', email: '', address: '', password: '' });
   const [feedback, setFeedback] = useState({ type: '', text: '' });
   const [loading, setLoading] = useState(false);
 
@@ -77,6 +77,12 @@ export default function ConsumerRegisterPage() {
               onChange={(event) => setForm({ ...form, email: event.target.value })}
               className="w-full rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 outline-none placeholder:text-white/30 focus:border-emerald-400"
               placeholder="E-mail"
+            />
+            <input
+              value={form.address}
+              onChange={(event) => setForm({ ...form, address: event.target.value })}
+              className="w-full rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 outline-none placeholder:text-white/30 focus:border-emerald-400"
+              placeholder="Endereco"
             />
             <input
               type="password"
