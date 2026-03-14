@@ -38,7 +38,7 @@ export async function createOrder(order) {
       ...(order.timeline || []),
       {
         status: order.status || 'pending',
-        at: serverTimestamp(),
+        at: new Date().toISOString(),
       },
     ],
   };
