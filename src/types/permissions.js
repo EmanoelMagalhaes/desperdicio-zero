@@ -1,0 +1,46 @@
+export const PERMISSIONS = {
+  PLATFORM_READ: 'platform:read',
+  PLATFORM_WRITE: 'platform:write',
+  CMS_READ: 'cms:read',
+  CMS_WRITE: 'cms:write',
+  USERS_READ: 'users:read',
+  USERS_WRITE: 'users:write',
+  CLIENT_ACCESS: 'client:access',
+  RESTAURANT_ACCESS: 'restaurant:access',
+  CONSUMER_ACCESS: 'consumer:access',
+  OFFERS_READ: 'offers:read',
+  OFFERS_MANAGE: 'offers:manage',
+  ORDERS_READ: 'orders:read',
+  ORDERS_WRITE: 'orders:write',
+  ORDERS_READ_SELF: 'orders:read:self',
+  ORDERS_CREATE: 'orders:create',
+};
+
+export const ROLE_PERMISSIONS = {
+  admin: [
+    PERMISSIONS.PLATFORM_READ,
+    PERMISSIONS.PLATFORM_WRITE,
+    PERMISSIONS.CMS_READ,
+    PERMISSIONS.CMS_WRITE,
+    PERMISSIONS.USERS_READ,
+    PERMISSIONS.USERS_WRITE,
+    PERMISSIONS.OFFERS_READ,
+    PERMISSIONS.OFFERS_MANAGE,
+    PERMISSIONS.ORDERS_READ,
+    PERMISSIONS.ORDERS_WRITE,
+  ],
+  client: [PERMISSIONS.CLIENT_ACCESS],
+  restaurant: [
+    PERMISSIONS.RESTAURANT_ACCESS,
+    PERMISSIONS.OFFERS_READ,
+    PERMISSIONS.OFFERS_MANAGE,
+    PERMISSIONS.ORDERS_READ,
+    PERMISSIONS.ORDERS_WRITE,
+  ],
+  consumer: [
+    PERMISSIONS.CONSUMER_ACCESS,
+    PERMISSIONS.OFFERS_READ,
+    PERMISSIONS.ORDERS_CREATE,
+    PERMISSIONS.ORDERS_READ_SELF,
+  ],
+};
