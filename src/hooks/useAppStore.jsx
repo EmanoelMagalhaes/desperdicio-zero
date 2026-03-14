@@ -26,6 +26,7 @@ import {
   updateClientApprovalStatus,
   toggleChallengeItem,
   toggleShoppingItem,
+  updateUserAddress,
 } from '../services/firebaseDataService';
 import { backendAdapter } from '../services/backendAdapter';
 import { auth } from '../services/firebaseClient';
@@ -986,6 +987,32 @@ export function AppStoreProvider({ children }) {
     [activeClientId, firebaseMode]
   );
 
+  const updateAccountAddress = useCallback(
+    async (address) => {
+      if (!session?.id) return { ok: false, error: 'Sessao invalida.' };
+      if (!address) return { ok: false, error: 'Informe um endereco valido.' };
+
+      if (firebaseMode) {
+        const result = await updateUserAddress(session.id, address);
+        if (!result.ok) return result;
+      }
+
+      setSession((prev) => (prev ? { ...prev, address } : prev));
+      setState((prev) => ({
+        ...prev,
+        clientAccounts: prev.clientAccounts.map((item) =>
+          item.id === session.id ? { ...item, address } : item
+        ),
+        consumerAccounts: prev.consumerAccounts.map((item) =>
+          item.id === session.id ? { ...item, address } : item
+        ),
+      }));
+
+      return { ok: true };
+    },
+    [session, firebaseMode]
+  );
+
   const exportBackup = useCallback(() => {
     if (!session || !activeClientId) {
       return { ok: false, error: 'Nenhum cliente ativo para exportacao.' };
@@ -1072,6 +1099,7 @@ export function AppStoreProvider({ children }) {
       toggleShopping,
       deleteShopping,
       toggleChallenge,
+      updateAccountAddress,
       exportBackup,
       backendMode: firebaseMode ? 'firebase' : 'local',
     }),
@@ -1107,6 +1135,7 @@ export function AppStoreProvider({ children }) {
       toggleShopping,
       deleteShopping,
       toggleChallenge,
+      updateAccountAddress,
       exportBackup,
       firebaseMode,
       offers,

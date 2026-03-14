@@ -42,10 +42,15 @@ service cloud.firestore {
         && request.resource.data.approvalStatus == resource.data.approvalStatus;
     }
 
+    function isOwnerAddressUpdate(uid) {
+      return isOwner(uid)
+        && request.resource.data.diff(resource.data).changedKeys().hasOnly(['address', 'updatedAt']);
+    }
+
     match /users/{uid} {
       allow create: if isClientSelfRegistration(uid) || isAdmin();
       allow read: if isOwner(uid) || isAdmin() || isPublicClientProfile();
-      allow update: if isAdmin() || isOwnerSafeProfileUpdate(uid);
+      allow update: if isAdmin() || isOwnerSafeProfileUpdate(uid) || isOwnerAddressUpdate(uid);
       allow delete: if false;
     }
 

@@ -248,3 +248,20 @@ export async function getUserProfile(uid) {
   return snapshot.data();
 }
 
+export async function updateUserAddress(uid, address) {
+  assertFirebaseReady();
+  if (!uid) return { ok: false, error: 'Usuario invalido.' };
+  if (!address) return { ok: false, error: 'Endereco invalido.' };
+
+  await setDoc(
+    userDocRef(uid),
+    {
+      address,
+      updatedAt: serverTimestamp(),
+    },
+    { merge: true }
+  );
+
+  return { ok: true };
+}
+

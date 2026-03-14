@@ -1,13 +1,41 @@
+import { useEffect, useState } from 'react';
 import { AlertTriangle, ChefHat, Package, ShoppingCart } from 'lucide-react';
 import MetricCard from '../common/MetricCard';
 import SectionTitle from '../common/SectionTitle';
 import { recipeSuggestions } from '../../services/kitchenService';
 import { daysUntil, statusFromExpiry } from '../../utils/date';
 
-export default function DashboardSection({ inventory, shoppingList, sessionName, onGoTo }) {
+export default function DashboardSection({ inventory, shoppingList, sessionName, onGoTo, address, onSaveAddress }) {
   const criticalItems = inventory.filter((item) => daysUntil(item.expiry) <= 2);
   const recipes = recipeSuggestions(inventory);
   const checkedCount = shoppingList.filter((item) => item.checked).length;
+  const [addressValue, setAddressValue] = useState(address || '');
+  const [saving, setSaving] = useState(false);
+  const [feedback, setFeedback] = useState('');
+
+  useEffect(() => {
+    setAddressValue(address || '');
+  }, [address]);
+
+  async function handleSave() {
+    if (!onSaveAddress) return;
+    if (!addressValue) {
+      setFeedback('Informe um endereco valido.');
+      return;
+    }
+
+    setSaving(true);
+    setFeedback('');
+    const result = await onSaveAddress(addressValue);
+    setSaving(false);
+
+    if (!result?.ok) {
+      setFeedback(result?.error || 'Nao foi possivel salvar o endereco.');
+      return;
+    }
+
+    setFeedback('Endereco atualizado com sucesso.');
+  }
 
   return (
     <div>
@@ -77,6 +105,31 @@ export default function DashboardSection({ inventory, shoppingList, sessionName,
         </div>
 
         <div className="space-y-6">
+          <div className="rounded-[30px] border border-white/10 bg-white/[0.04] p-6">
+            <div className="text-sm uppercase tracking-[0.22em] text-emerald-300">Endereco</div>
+            <h2 className="mt-2 text-2xl font-black">Local de retirada</h2>
+            <div className="mt-4 space-y-3">
+              <input
+                value={addressValue}
+                onChange={(event) => setAddressValue(event.target.value)}
+                className="w-full rounded-2xl border border-white/10 bg-neutral-900 px-4 py-3 outline-none placeholder:text-white/30 focus:border-emerald-400"
+                placeholder="Endereco do restaurante"
+              />
+              <button
+                onClick={handleSave}
+                disabled={!onSaveAddress || saving}
+                className="rounded-2xl bg-emerald-500 px-4 py-2 font-semibold text-neutral-950 transition hover:scale-[1.01] disabled:opacity-60"
+              >
+                {saving ? 'Salvando...' : 'Salvar endereco'}
+              </button>
+              {feedback ? (
+                <div className="rounded-2xl border border-white/10 bg-neutral-900 p-3 text-sm text-white/70">
+                  {feedback}
+                </div>
+              ) : null}
+            </div>
+          </div>
+
           <div className="rounded-[30px] border border-white/10 bg-white/[0.04] p-6">
             <div className="text-sm uppercase tracking-[0.22em] text-emerald-300">Sugestao do dia</div>
             <h2 className="mt-2 text-2xl font-black">Acao recomendada</h2>
