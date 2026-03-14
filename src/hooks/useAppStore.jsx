@@ -77,6 +77,17 @@ function upsertOffer(list, offer) {
   return next;
 }
 
+function mergeOrdersById(existing, incoming) {
+  const next = new Map();
+  existing.forEach((order) => {
+    if (order?.id) next.set(order.id, order);
+  });
+  incoming.forEach((order) => {
+    if (order?.id) next.set(order.id, order);
+  });
+  return Array.from(next.values());
+}
+
 export function AppStoreProvider({ children }) {
   const firebaseMode = backendAdapter.isFirebase();
 
@@ -261,7 +272,10 @@ export function AppStoreProvider({ children }) {
       const unsubscribe = subscribeOrdersByConsumer(
         session.id,
         (items) => {
-          setState((prev) => ({ ...prev, orders: items }));
+          setState((prev) => {
+            const existing = (prev.orders || []).filter((order) => order.consumerId === session.id);
+            return { ...prev, orders: mergeOrdersById(existing, items) };
+          });
           setOrdersStatus('ready');
           setOrdersError('');
         },
