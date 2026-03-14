@@ -28,6 +28,7 @@ import {
   toggleShoppingItem,
 } from '../services/firebaseDataService';
 import { backendAdapter } from '../services/backendAdapter';
+import { auth } from '../services/firebaseClient';
 import { loadState, persistState } from '../services/storageService';
 import { createOffer, deleteOffer, subscribeOffers, updateOffer } from '../services/offersService';
 import { createOrder as createOrderRemote, subscribeOrdersByConsumer } from '../services/ordersService';
@@ -491,8 +492,10 @@ export function AppStoreProvider({ children }) {
         return { ok: false, error: 'Restaurante nao identificado.' };
       }
 
-      const isGuest = !session;
-      const consumerId = session ? session.id : createId('guest');
+      const authUser = firebaseMode ? auth?.currentUser : null;
+      const hasAuthUser = Boolean(authUser);
+      const isGuest = firebaseMode ? !hasAuthUser : !session;
+      const consumerId = hasAuthUser ? authUser.uid : (session?.id || createId('guest'));
 
       const orderPayload = {
         restaurantId,
@@ -522,6 +525,8 @@ export function AppStoreProvider({ children }) {
       try {
         let createdOrder = orderPayload;
         if (firebaseMode) {
+          console.info('[orders] session', session ? { id: session.id, role: session.role } : null);
+          console.info('[orders] authUser', authUser ? { uid: authUser.uid, email: authUser.email } : null);
           console.info('[orders] payload', orderPayload);
           const remoteOrder = await createOrderRemote(orderPayload);
           createdOrder = { ...orderPayload, id: remoteOrder.id };
