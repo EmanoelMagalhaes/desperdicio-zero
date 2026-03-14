@@ -283,11 +283,12 @@ export function AppStoreProvider({ children }) {
     setOrdersError('');
 
     if (session.role === 'consumer') {
+      const consumerKey = auth?.currentUser?.uid || session.id;
       const unsubscribe = subscribeOrdersByConsumer(
-        session.id,
+        consumerKey,
         (items) => {
           setState((prev) => {
-            const existing = (prev.orders || []).filter((order) => order.consumerId === session.id);
+            const existing = (prev.orders || []).filter((order) => order.consumerId === consumerKey);
             return { ...prev, orders: mergeOrdersById(existing, items) };
           });
           setOrdersStatus('ready');
@@ -341,9 +342,10 @@ export function AppStoreProvider({ children }) {
   const offers = useMemo(() => state.offers || [], [state.offers]);
   const orders = useMemo(() => state.orders || [], [state.orders]);
   const consumerOrders = useMemo(() => {
-    if (!session?.id) return [];
-    return orders.filter((order) => order.consumerId === session.id);
-  }, [orders, session?.id]);
+    const consumerKey = firebaseMode ? (auth?.currentUser?.uid || session?.id || '') : (session?.id || '');
+    if (!consumerKey) return [];
+    return orders.filter((order) => order.consumerId === consumerKey);
+  }, [orders, session?.id, firebaseMode]);
   const restaurantOrders = useMemo(() => {
     if (!session) return [];
     const restaurantId = session.role === 'admin' ? activeClientId : session.id;
