@@ -1,4 +1,4 @@
-import { ChefHat, Home, Lightbulb, Package, ShoppingCart, Tag } from 'lucide-react';
+import { ChefHat, ClipboardList, Home, Lightbulb, Package, ShoppingCart, Tag } from 'lucide-react';
 import AppShell from './AppShell';
 
 const menuItems = [
@@ -6,6 +6,7 @@ const menuItems = [
   { to: '/app/inventory', label: 'Minha despensa', icon: Package },
   { to: '/app/shopping', label: 'Lista de compras', icon: ShoppingCart },
   { to: '/restaurante/ofertas', label: 'Ofertas', icon: Tag },
+  { to: '/restaurante/pedidos', label: 'Pedidos', icon: ClipboardList },
   { to: '/app/recipes', label: 'Receitas sugeridas', icon: ChefHat },
   { to: '/app/tips', label: 'Dicas e desafios', icon: Lightbulb },
 ];

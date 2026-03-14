@@ -31,7 +31,7 @@ import { backendAdapter } from '../services/backendAdapter';
 import { auth } from '../services/firebaseClient';
 import { loadState, persistState } from '../services/storageService';
 import { createOffer, deleteOffer, subscribeOffers, updateOffer } from '../services/offersService';
-import { createOrder as createOrderRemote, subscribeOrdersByConsumer } from '../services/ordersService';
+import { createOrder as createOrderRemote, subscribeOrdersByConsumer, subscribeOrdersByRestaurant } from '../services/ordersService';
 import { daysUntil } from '../utils/date';
 import { downloadJson } from '../utils/export';
 import { createId } from '../utils/ids';
@@ -241,30 +241,51 @@ export function AppStoreProvider({ children }) {
   }, [firebaseMode]);
 
   useEffect(() => {
-    if (!firebaseMode || session?.role !== 'consumer') {
-      if (!firebaseMode) {
-        setOrdersStatus('ready');
-        setOrdersError('');
-      }
+    if (!firebaseMode) {
+      setOrdersStatus('ready');
+      setOrdersError('');
       return;
     }
 
-    setOrdersStatus('loading');
-    const unsubscribe = subscribeOrdersByConsumer(
-      session.id,
-      (items) => {
-        setState((prev) => ({ ...prev, orders: items }));
-        setOrdersStatus('ready');
-        setOrdersError('');
-      },
-      () => {
-        setOrdersStatus('error');
-        setOrdersError('Nao foi possivel carregar pedidos no Firebase.');
-      }
-    );
+    if (!session) return;
 
-    return unsubscribe;
-  }, [firebaseMode, session?.role, session?.id]);
+    setOrdersStatus('loading');
+    setOrdersError('');
+
+    if (session.role === 'consumer') {
+      const unsubscribe = subscribeOrdersByConsumer(
+        session.id,
+        (items) => {
+          setState((prev) => ({ ...prev, orders: items }));
+          setOrdersStatus('ready');
+          setOrdersError('');
+        },
+        () => {
+          setOrdersStatus('error');
+          setOrdersError('Nao foi possivel carregar pedidos no Firebase.');
+        }
+      );
+
+      return unsubscribe;
+    }
+
+    if (session.role === 'client') {
+      const unsubscribe = subscribeOrdersByRestaurant(
+        session.id,
+        (items) => {
+          setState((prev) => ({ ...prev, orders: items }));
+          setOrdersStatus('ready');
+          setOrdersError('');
+        },
+        () => {
+          setOrdersStatus('error');
+          setOrdersError('Nao foi possivel carregar pedidos no Firebase.');
+        }
+      );
+
+      return unsubscribe;
+    }
+  }, [firebaseMode, session]);
 
   const activeClientId = useMemo(() => {
     if (session?.role === 'client') return session.id;
@@ -290,6 +311,12 @@ export function AppStoreProvider({ children }) {
     if (!session?.id) return [];
     return orders.filter((order) => order.consumerId === session.id);
   }, [orders, session?.id]);
+  const restaurantOrders = useMemo(() => {
+    if (!session) return [];
+    const restaurantId = session.role === 'admin' ? activeClientId : session.id;
+    if (!restaurantId) return [];
+    return orders.filter((order) => order.restaurantId === restaurantId);
+  }, [orders, session, activeClientId]);
   const restaurantOffers = useMemo(() => {
     if (!session) return [];
     const restaurantId = session.role === 'admin' ? activeClientId : session.id;
@@ -918,6 +945,7 @@ export function AppStoreProvider({ children }) {
       offersStatus,
       offersError,
       consumerOrders,
+      restaurantOrders,
       restaurantOffers,
       cart,
       cartTotal,
@@ -991,6 +1019,7 @@ export function AppStoreProvider({ children }) {
       offersStatus,
       offersError,
       consumerOrders,
+      restaurantOrders,
       restaurantOffers,
       cart,
       cartTotal,

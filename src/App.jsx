@@ -33,6 +33,7 @@ import CheckoutPage from './pages/consumer/CheckoutPage';
 import OrderSuccessPage from './pages/consumer/OrderSuccessPage';
 import OffersListPage from './pages/restaurant/OffersListPage';
 import OfferFormPage from './pages/restaurant/OfferFormPage';
+import RestaurantOrdersPage from './pages/restaurant/RestaurantOrdersPage';
 
 export default function App() {
   const { ready } = useAppStore();
@@ -84,6 +85,7 @@ export default function App() {
           <Route path="/restaurante/ofertas" element={<OffersListPage />} />
           <Route path="/restaurante/ofertas/nova" element={<OfferFormPage />} />
           <Route path="/restaurante/ofertas/:id/editar" element={<OfferFormPage />} />
+          <Route path="/restaurante/pedidos" element={<RestaurantOrdersPage />} />
         </Route>
       </Route>
 

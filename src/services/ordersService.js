@@ -26,6 +26,27 @@ export function subscribeOrdersByConsumer(consumerId, onChange, onError) {
   );
 }
 
+export function subscribeOrdersByRestaurant(restaurantId, onChange, onError) {
+  assertFirebaseReady();
+
+  if (!restaurantId) {
+    onChange([]);
+    return () => {};
+  }
+
+  const ordersQuery = query(collection(db, 'orders'), where('restaurantId', '==', restaurantId));
+
+  return onSnapshot(
+    ordersQuery,
+    (snapshot) => {
+      onChange(mapOrders(snapshot));
+    },
+    (error) => {
+      if (onError) onError(error);
+    }
+  );
+}
+
 export async function createOrder(order) {
   assertFirebaseReady();
 

@@ -92,7 +92,8 @@ service cloud.firestore {
 
     match /orders/{orderId} {
       allow create: if isValidOrder() && (isGuestOrder() || isConsumerOrder());
-      allow read, update, delete: if false;
+      allow read: if isAdmin() || isApprovedClient(resource.data.restaurantId);
+      allow update, delete: if false;
     }
 
     match /{document=**} {
