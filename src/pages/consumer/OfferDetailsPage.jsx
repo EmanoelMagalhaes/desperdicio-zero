@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import SectionTitle from '../../components/common/SectionTitle';
 import { useAppStore } from '../../hooks/useAppStore';
@@ -10,7 +10,8 @@ function formatCurrency(value) {
 
 export default function OfferDetailsPage() {
   const { id } = useParams();
-  const { offers = [] } = useAppStore();
+  const { offers = [], addToCart, replaceCartWithOffer, cartWarning, clearCart } = useAppStore();
+  const [pendingOffer, setPendingOffer] = useState(null);
 
   const offer = useMemo(() => offers.find((item) => item.id === id), [offers, id]);
 
@@ -55,9 +56,48 @@ export default function OfferDetailsPage() {
           </div>
 
           <div className="rounded-2xl border border-white/10 bg-neutral-900 p-4 text-sm text-white/70">
-            Em breve voce podera montar seu pedido diretamente por aqui. Enquanto isso, acompanhe as ofertas e salve o
-            restaurante nos seus favoritos.
+            Adicione ao pedido e finalize quando estiver pronto. O restaurante recebera sua solicitacao imediatamente.
           </div>
+
+          {cartWarning ? (
+            <div className="rounded-2xl border border-amber-500/20 bg-amber-500/10 p-4 text-sm text-amber-100">
+              {cartWarning}
+              {pendingOffer ? (
+                <div className="mt-3 flex flex-wrap gap-3">
+                  <button
+                    onClick={() => {
+                      clearCart();
+                      replaceCartWithOffer(pendingOffer);
+                      setPendingOffer(null);
+                    }}
+                    className="rounded-2xl bg-emerald-500 px-4 py-2 text-sm font-semibold text-neutral-950"
+                  >
+                    Limpar carrinho e adicionar
+                  </button>
+                  <button
+                    onClick={() => setPendingOffer(null)}
+                    className="rounded-2xl border border-white/10 px-4 py-2 text-sm font-semibold text-white/80"
+                  >
+                    Manter carrinho atual
+                  </button>
+                </div>
+              ) : null}
+            </div>
+          ) : null}
+
+          <button
+            onClick={() => {
+              const result = addToCart(offer);
+              if (result?.requiresConfirm) {
+                setPendingOffer(offer);
+              } else {
+                setPendingOffer(null);
+              }
+            }}
+            className="rounded-2xl bg-emerald-500 px-4 py-2 text-sm font-semibold text-neutral-950"
+          >
+            Adicionar ao pedido
+          </button>
 
           <Link
             to="/ofertas"

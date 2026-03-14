@@ -30,7 +30,7 @@ import {
 import { backendAdapter } from '../services/backendAdapter';
 import { loadState, persistState } from '../services/storageService';
 import { createOffer, deleteOffer, subscribeOffers, updateOffer } from '../services/offersService';
-import { subscribeOrdersByConsumer } from '../services/ordersService';
+import { createOrder as createOrderRemote, subscribeOrdersByConsumer } from '../services/ordersService';
 import { daysUntil } from '../utils/date';
 import { downloadJson } from '../utils/export';
 import { createId } from '../utils/ids';
@@ -81,6 +81,8 @@ export function AppStoreProvider({ children }) {
   const [offersError, setOffersError] = useState('');
   const [ordersStatus, setOrdersStatus] = useState('idle');
   const [ordersError, setOrdersError] = useState('');
+  const [cart, setCart] = useState({ restaurantId: '', restaurantName: '', items: [] });
+  const [cartWarning, setCartWarning] = useState('');
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
@@ -293,6 +295,10 @@ export function AppStoreProvider({ children }) {
     if (!restaurantId) return [];
     return offers.filter((offer) => offer.restaurantId === restaurantId);
   }, [offers, session, activeClientId]);
+  const cartTotal = useMemo(
+    () => cart.items.reduce((acc, item) => acc + Number(item.subtotal || 0), 0),
+    [cart.items]
+  );
 
   const demoInventory = defaultState.inventories['cliente-demo'] || [];
   const demoShoppingList = defaultState.shoppingLists['cliente-demo'] || [];
@@ -371,6 +377,167 @@ export function AppStoreProvider({ children }) {
       };
     },
     [firebaseMode, state]
+  );
+
+  const clearCart = useCallback(() => {
+    setCart({ restaurantId: '', restaurantName: '', items: [] });
+    setCartWarning('');
+  }, []);
+
+  const addToCart = useCallback(
+    (offer) => {
+      if (!offer) return { ok: false, error: 'Oferta invalida.' };
+
+      if (cart.restaurantId && cart.restaurantId !== offer.restaurantId) {
+        setCartWarning(
+          'Seu carrinho possui itens de outro restaurante. Limpe o carrinho para trocar de restaurante.'
+        );
+        return { ok: false, requiresConfirm: true };
+      }
+
+      setCartWarning('');
+      setCart((prev) => {
+        const existing = prev.items.find((item) => item.offerId === offer.id);
+        const nextItems = existing
+          ? prev.items.map((item) =>
+              item.offerId === offer.id
+                ? {
+                    ...item,
+                    quantity: item.quantity + 1,
+                    subtotal: (item.quantity + 1) * item.unitPrice,
+                  }
+                : item
+            )
+          : [
+              ...prev.items,
+              {
+                offerId: offer.id,
+                title: offer.title,
+                quantity: 1,
+                unitPrice: Number(offer.price || 0),
+                subtotal: Number(offer.price || 0),
+              },
+            ];
+
+        return {
+          restaurantId: offer.restaurantId,
+          restaurantName: offer.restaurantName,
+          items: nextItems,
+        };
+      });
+
+      return { ok: true };
+    },
+    [cart.restaurantId]
+  );
+
+  const replaceCartWithOffer = useCallback((offer) => {
+    if (!offer) return { ok: false, error: 'Oferta invalida.' };
+
+    setCartWarning('');
+    setCart({
+      restaurantId: offer.restaurantId,
+      restaurantName: offer.restaurantName,
+      items: [
+        {
+          offerId: offer.id,
+          title: offer.title,
+          quantity: 1,
+          unitPrice: Number(offer.price || 0),
+          subtotal: Number(offer.price || 0),
+        },
+      ],
+    });
+
+    return { ok: true };
+  }, []);
+
+  const updateCartItem = useCallback((offerId, nextQuantity) => {
+    setCart((prev) => {
+      const items = prev.items
+        .map((item) => {
+          if (item.offerId !== offerId) return item;
+          const quantity = Math.max(1, nextQuantity);
+          return { ...item, quantity, subtotal: quantity * item.unitPrice };
+        })
+        .filter((item) => item.quantity > 0);
+
+      if (!items.length) {
+        return { restaurantId: '', restaurantName: '', items: [] };
+      }
+
+      return { ...prev, items };
+    });
+  }, []);
+
+  const removeFromCart = useCallback((offerId) => {
+    setCart((prev) => {
+      const items = prev.items.filter((item) => item.offerId !== offerId);
+      if (!items.length) {
+        return { restaurantId: '', restaurantName: '', items: [] };
+      }
+      return { ...prev, items };
+    });
+  }, []);
+
+  const createOrder = useCallback(
+    async (payload) => {
+      if (!cart.items.length) {
+        return { ok: false, error: 'Seu carrinho esta vazio.' };
+      }
+
+      const restaurantId = cart.restaurantId;
+      if (!restaurantId) {
+        return { ok: false, error: 'Restaurante nao identificado.' };
+      }
+
+      const isGuest = !(session && session.role === 'consumer');
+      const consumerId = session?.role === 'consumer' ? session.id : createId('guest');
+
+      const orderPayload = {
+        restaurantId,
+        restaurantName: cart.restaurantName,
+        consumerId,
+        consumerIsGuest: Boolean(isGuest),
+        consumerName: payload.consumerName,
+        consumerEmail: payload.consumerEmail,
+        consumerPhone: payload.consumerPhone,
+        receivingMethod: payload.receivingMethod,
+        deliveryAddress: payload.deliveryAddress || '',
+        paymentMethod: payload.paymentMethod,
+        notes: payload.notes || '',
+        items: cart.items,
+        total: cartTotal,
+        status: 'pending',
+        timeline: [
+          {
+            status: 'pending',
+            at: new Date().toISOString(),
+          },
+        ],
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+
+      try {
+        let createdOrder = orderPayload;
+        if (firebaseMode) {
+          const remoteOrder = await createOrderRemote(orderPayload);
+          createdOrder = { ...orderPayload, id: remoteOrder.id };
+        }
+
+        setState((prev) => ({
+          ...prev,
+          orders: [...(prev.orders || []), createdOrder],
+        }));
+
+        clearCart();
+        return { ok: true, order: createdOrder };
+      } catch (error) {
+        return { ok: false, error: error?.message || 'Nao foi possivel enviar o pedido.' };
+      }
+    },
+    [cart, cartTotal, session, firebaseMode, clearCart]
   );
 
   const createRestaurantOffer = useCallback(
@@ -746,6 +913,9 @@ export function AppStoreProvider({ children }) {
       offersError,
       consumerOrders,
       restaurantOffers,
+      cart,
+      cartTotal,
+      cartWarning,
       ordersStatus,
       ordersError,
       demoInventory,
@@ -761,6 +931,12 @@ export function AppStoreProvider({ children }) {
       createRestaurantOffer,
       updateRestaurantOffer,
       deleteRestaurantOffer,
+      addToCart,
+      replaceCartWithOffer,
+      updateCartItem,
+      removeFromCart,
+      clearCart,
+      createOrder,
       setClientApproval,
       logout,
       addInventory,
@@ -810,6 +986,9 @@ export function AppStoreProvider({ children }) {
       offersError,
       consumerOrders,
       restaurantOffers,
+      cart,
+      cartTotal,
+      cartWarning,
       ordersStatus,
       ordersError,
     ]

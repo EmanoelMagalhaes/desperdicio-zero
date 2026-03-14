@@ -29,6 +29,8 @@ import OfferDetailsPage from './pages/consumer/OfferDetailsPage';
 import MyOrdersPage from './pages/consumer/MyOrdersPage';
 import ConsumerLoginPage from './pages/consumer/ConsumerLoginPage';
 import ConsumerRegisterPage from './pages/consumer/ConsumerRegisterPage';
+import CheckoutPage from './pages/consumer/CheckoutPage';
+import OrderSuccessPage from './pages/consumer/OrderSuccessPage';
 import OffersListPage from './pages/restaurant/OffersListPage';
 import OfferFormPage from './pages/restaurant/OfferFormPage';
 
@@ -45,6 +47,8 @@ export default function App() {
         <Route index element={<LandingPage />} />
         <Route path="/ofertas" element={<OffersPage />} />
         <Route path="/ofertas/:id" element={<OfferDetailsPage />} />
+        <Route path="/pedido" element={<CheckoutPage />} />
+        <Route path="/pedido/sucesso" element={<OrderSuccessPage />} />
         <Route path="/demo/kitchen" element={<DemoKitchen />} />
         <Route path="/demo/recipes" element={<DemoRecipes />} />
         <Route path="/demo/shopping" element={<DemoShopping />} />

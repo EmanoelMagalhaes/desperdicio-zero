@@ -1,4 +1,4 @@
-import { collection, onSnapshot, query, where } from 'firebase/firestore';
+import { addDoc, collection, onSnapshot, query, serverTimestamp, where } from 'firebase/firestore';
 import { assertFirebaseReady, db } from './firebaseClient';
 
 function mapOrders(snapshot) {
@@ -24,4 +24,25 @@ export function subscribeOrdersByConsumer(consumerId, onChange, onError) {
       if (onError) onError(error);
     }
   );
+}
+
+export async function createOrder(order) {
+  assertFirebaseReady();
+
+  const payload = {
+    ...order,
+    status: order.status || 'pending',
+    createdAt: serverTimestamp(),
+    updatedAt: serverTimestamp(),
+    timeline: [
+      ...(order.timeline || []),
+      {
+        status: order.status || 'pending',
+        at: serverTimestamp(),
+      },
+    ],
+  };
+
+  const docRef = await addDoc(collection(db, 'orders'), payload);
+  return { id: docRef.id, ...payload };
 }
