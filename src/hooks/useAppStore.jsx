@@ -135,7 +135,11 @@ export function AppStoreProvider({ children }) {
 
       if (!account) {
         setSession(null);
-        setState((prev) => ({ ...prev, ...createEmptyOperationalState() }));
+        setState((prev) => ({
+          ...prev,
+          ...createEmptyOperationalState(),
+          offers: prev.offers || [],
+        }));
         setAdminSelectedClientId('');
         return;
       }

@@ -1,5 +1,5 @@
 import { deleteApp, getApps, initializeApp } from 'firebase/app';
-import { getAuth } from 'firebase/auth';
+import { browserLocalPersistence, getAuth, setPersistence } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 
 export const firebaseConfig = {
@@ -16,6 +16,12 @@ export const isFirebaseConfigured = Object.values(firebaseConfig).every(Boolean)
 export const firebaseApp = isFirebaseConfigured ? initializeApp(firebaseConfig) : null;
 export const auth = firebaseApp ? getAuth(firebaseApp) : null;
 export const db = firebaseApp ? getFirestore(firebaseApp) : null;
+
+if (auth) {
+  setPersistence(auth, browserLocalPersistence).catch((error) => {
+    console.warn('Firebase auth persistence fallback:', error);
+  });
+}
 
 export function assertFirebaseReady() {
   if (!isFirebaseConfigured || !auth || !db) {
