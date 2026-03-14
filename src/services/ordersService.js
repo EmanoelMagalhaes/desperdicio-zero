@@ -50,18 +50,21 @@ export function subscribeOrdersByRestaurant(restaurantId, onChange, onError) {
 export async function createOrder(order) {
   assertFirebaseReady();
 
+  const baseTimeline = Array.isArray(order.timeline) && order.timeline.length
+    ? order.timeline
+    : [
+      {
+        status: order.status || 'pending',
+        at: new Date().toISOString(),
+      },
+    ];
+
   const payload = {
     ...order,
     status: order.status || 'pending',
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
-    timeline: [
-      ...(order.timeline || []),
-      {
-        status: order.status || 'pending',
-        at: new Date().toISOString(),
-      },
-    ],
+    timeline: baseTimeline,
   };
 
   const docRef = await addDoc(collection(db, 'orders'), payload);
