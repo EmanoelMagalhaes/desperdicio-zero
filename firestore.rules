@@ -62,20 +62,17 @@ service cloud.firestore {
     function isGuestOrder() {
       return request.auth == null
         && request.resource.data.consumerIsGuest == true
-        && request.resource.data.consumerId is string
-        && request.resource.data.consumerId.matches('^guest-.*');
+        && request.resource.data.consumerId is string;
     }
 
     function isConsumerOrder() {
       return request.auth != null
-        && request.resource.data.consumerIsGuest == false
         && request.resource.data.consumerId == request.auth.uid;
     }
 
     function isConsumerReader() {
       return request.auth != null
-        && resource.data.consumerId == request.auth.uid
-        && resource.data.consumerIsGuest != true;
+        && resource.data.consumerId == request.auth.uid;
     }
 
     function isValidOrder() {
