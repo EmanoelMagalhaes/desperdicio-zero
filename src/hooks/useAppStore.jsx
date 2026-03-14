@@ -491,8 +491,8 @@ export function AppStoreProvider({ children }) {
         return { ok: false, error: 'Restaurante nao identificado.' };
       }
 
-      const isGuest = !(session && session.role === 'consumer');
-      const consumerId = session?.role === 'consumer' ? session.id : createId('guest');
+      const isGuest = !session;
+      const consumerId = session ? session.id : createId('guest');
 
       const orderPayload = {
         restaurantId,
@@ -522,6 +522,7 @@ export function AppStoreProvider({ children }) {
       try {
         let createdOrder = orderPayload;
         if (firebaseMode) {
+          console.info('[orders] payload', orderPayload);
           const remoteOrder = await createOrderRemote(orderPayload);
           createdOrder = { ...orderPayload, id: remoteOrder.id };
         }
