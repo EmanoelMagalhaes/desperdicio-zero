@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import SectionTitle from '../../components/common/SectionTitle';
 import CartItemRow from '../../components/common/CartItemRow';
 import { useAppStore } from '../../hooks/useAppStore';
+import { getUserProfile } from '../../services/firebaseDataService';
 
 function formatCurrency(value) {
   const amount = Number(value || 0);
@@ -33,6 +34,8 @@ export default function CheckoutPage() {
     clearCart,
     createOrder,
     session,
+    state,
+    backendMode,
   } = useAppStore();
 
   const paymentOptions = ['Cartão', 'Pix', 'Dinheiro'];
@@ -47,6 +50,7 @@ export default function CheckoutPage() {
   });
   const [feedback, setFeedback] = useState({ type: '', text: '' });
   const [loading, setLoading] = useState(false);
+  const [pickupAddress, setPickupAddress] = useState('');
 
   useEffect(() => {
     if (session?.role !== 'consumer') return;
@@ -56,6 +60,36 @@ export default function CheckoutPage() {
       consumerEmail: prev.consumerEmail || session.email || '',
     }));
   }, [session]);
+
+  useEffect(() => {
+    if (form.receivingMethod !== 'retirada') return;
+    if (!cart.restaurantId) {
+      setPickupAddress('');
+      return;
+    }
+
+    if (backendMode !== 'firebase') {
+      const localRestaurant = (state.clientAccounts || []).find((item) => item.id === cart.restaurantId);
+      setPickupAddress(localRestaurant?.address || '');
+      return;
+    }
+
+    let active = true;
+
+    getUserProfile(cart.restaurantId)
+      .then((profile) => {
+        if (!active) return;
+        setPickupAddress(profile?.address || '');
+      })
+      .catch(() => {
+        if (!active) return;
+        setPickupAddress('');
+      })
+
+    return () => {
+      active = false;
+    };
+  }, [form.receivingMethod, cart.restaurantId, backendMode, state.clientAccounts]);
 
   const totalLabel = useMemo(() => formatCurrency(cartTotal), [cartTotal]);
 
@@ -177,6 +211,15 @@ export default function CheckoutPage() {
               <option value="retirada">Retirada</option>
               <option value="entrega">Entrega</option>
             </select>
+
+            {form.receivingMethod === 'retirada' ? (
+              <div className="rounded-2xl border border-white/10 bg-neutral-900 p-4 text-sm text-white/70">
+                <div className="text-xs uppercase tracking-[0.2em] text-emerald-300">Endereco de retirada</div>
+                <div className="mt-2 text-white/80">
+                  {pickupAddress || 'Endereco nao informado'}
+                </div>
+              </div>
+            ) : null}
 
             {form.receivingMethod === 'entrega' ? (
               <input

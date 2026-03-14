@@ -12,6 +12,7 @@ export const defaultState = {
       password: '123456',
       businessType: 'Restaurante',
       approvalStatus: 'approved',
+      address: 'Rua das Flores, 1200 - Centro',
     },
     {
       id: 'cliente-demo-2',
@@ -21,6 +22,7 @@ export const defaultState = {
       password: '123456',
       businessType: 'Cafeteria',
       approvalStatus: 'approved',
+      address: 'Av. Paulista, 45 - Bela Vista',
     },
   ],
   adminAccounts: [
@@ -39,6 +41,7 @@ export const defaultState = {
       name: 'Consumidor Demo',
       email: 'consumidor@desperdiciozero.com',
       password: '123456',
+      address: 'Rua das Acacias, 88 - Centro',
     },
   ],
   offers: [

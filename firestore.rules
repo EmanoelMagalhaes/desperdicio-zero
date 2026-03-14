@@ -25,6 +25,11 @@ service cloud.firestore {
       return isOwner(uid) && userDoc(uid).data.approvalStatus == 'approved';
     }
 
+    function isPublicClientProfile() {
+      return resource.data.role == 'client'
+        && resource.data.approvalStatus == 'approved';
+    }
+
     function isClientSelfRegistration(uid) {
       return isOwner(uid)
         && request.resource.data.role == 'client'
@@ -39,7 +44,7 @@ service cloud.firestore {
 
     match /users/{uid} {
       allow create: if isClientSelfRegistration(uid) || isAdmin();
-      allow read: if isOwner(uid) || isAdmin();
+      allow read: if isOwner(uid) || isAdmin() || isPublicClientProfile();
       allow update: if isAdmin() || isOwnerSafeProfileUpdate(uid);
       allow delete: if false;
     }
