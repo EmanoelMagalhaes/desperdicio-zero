@@ -22,6 +22,7 @@ export default function CheckoutPage() {
     session,
   } = useAppStore();
 
+  const paymentOptions = ['Cartão', 'Pix', 'Dinheiro'];
   const [form, setForm] = useState({
     consumerName: '',
     consumerPhone: '',
@@ -46,8 +47,13 @@ export default function CheckoutPage() {
   const totalLabel = useMemo(() => formatCurrency(cartTotal), [cartTotal]);
 
   async function handleSubmit() {
-    if (!form.consumerName || !form.consumerPhone || !form.consumerEmail || !form.paymentMethod) {
-      setFeedback({ type: 'error', text: 'Preencha nome, WhatsApp, e-mail e forma de pagamento.' });
+    if (!form.consumerName || !form.consumerPhone || !form.consumerEmail) {
+      setFeedback({ type: 'error', text: 'Preencha nome, WhatsApp e e-mail.' });
+      return;
+    }
+
+    if (!paymentOptions.includes(form.paymentMethod)) {
+      setFeedback({ type: 'error', text: 'Selecione a forma de pagamento.' });
       return;
     }
 
@@ -166,12 +172,18 @@ export default function CheckoutPage() {
               />
             ) : null}
 
-            <input
+            <select
               value={form.paymentMethod}
               onChange={(event) => setForm({ ...form, paymentMethod: event.target.value })}
               className="w-full rounded-2xl border border-white/10 bg-neutral-900 px-4 py-3 outline-none placeholder:text-white/30 focus:border-emerald-400"
-              placeholder="Forma de pagamento"
-            />
+            >
+              <option value="">Forma de pagamento</option>
+              {paymentOptions.map((option) => (
+                <option key={option} value={option}>
+                  {option}
+                </option>
+              ))}
+            </select>
 
             <textarea
               value={form.notes}
