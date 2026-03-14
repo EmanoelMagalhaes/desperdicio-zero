@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import SectionTitle from '../../components/common/SectionTitle';
 import { useAppStore } from '../../hooks/useAppStore';
 
@@ -41,7 +42,16 @@ function shortOrderId(orderId) {
 }
 
 export default function RestaurantOrdersPage() {
-  const { restaurantOrders = [], ordersStatus, ordersError } = useAppStore();
+  const { restaurantOrders = [], ordersStatus, ordersError, updateOrderStatus } = useAppStore();
+  const [actionError, setActionError] = useState('');
+
+  async function handleStatusChange(orderId, nextStatus) {
+    setActionError('');
+    const result = await updateOrderStatus(orderId, nextStatus);
+    if (!result.ok) {
+      setActionError(result.error || 'Nao foi possivel atualizar o pedido.');
+    }
+  }
 
   return (
     <div>
@@ -54,6 +64,12 @@ export default function RestaurantOrdersPage() {
       {ordersStatus === 'error' ? (
         <div className="rounded-2xl border border-amber-500/20 bg-amber-500/10 p-4 text-amber-100">
           {ordersError || 'Nao foi possivel carregar os pedidos.'}
+        </div>
+      ) : null}
+
+      {actionError ? (
+        <div className="mb-4 rounded-2xl border border-amber-500/20 bg-amber-500/10 p-4 text-amber-100">
+          {actionError}
         </div>
       ) : null}
 
@@ -91,6 +107,19 @@ export default function RestaurantOrdersPage() {
                 </div>
                 <div className="text-sm text-white/50">{formatOrderDate(order.createdAt)}</div>
               </div>
+            </div>
+
+            <div className="mt-4 flex flex-wrap gap-2">
+              {['pending', 'confirmed', 'preparing', 'ready', 'completed', 'cancelled'].map((status) => (
+                <button
+                  key={`${order.id}-${status}`}
+                  onClick={() => handleStatusChange(order.id, status)}
+                  disabled={order.status === status}
+                  className="rounded-2xl border border-white/10 px-3 py-2 text-xs font-semibold text-white/80 transition hover:bg-white/[0.08] disabled:cursor-default disabled:opacity-50"
+                >
+                  {status}
+                </button>
+              ))}
             </div>
           </div>
         ))}
