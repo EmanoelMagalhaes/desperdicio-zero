@@ -1,9 +1,10 @@
-import { Home, Package, ShoppingCart, ChefHat, Lightbulb } from 'lucide-react';
+import { Home, Package, ShoppingCart, ChefHat, Lightbulb, Tag } from 'lucide-react';
 import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useAppStore } from '../../hooks/useAppStore';
 
 const publicNavItems = [
   { to: '/', label: 'Home', icon: Home },
+  { to: '/ofertas', label: 'Ofertas', icon: Tag },
   { to: '/demo/kitchen', label: 'Estoque', icon: Package },
   { to: '/demo/shopping', label: 'Compras', icon: ShoppingCart },
   { to: '/demo/recipes', label: 'Receitas', icon: ChefHat },
@@ -17,6 +18,11 @@ export default function PublicLayout() {
   function goToPanel() {
     if (session?.role === 'admin') {
       navigate('/admin/dashboard');
+      return;
+    }
+
+    if (session?.role === 'consumer') {
+      navigate('/meus-pedidos');
       return;
     }
 

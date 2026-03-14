@@ -154,6 +154,9 @@ export default function LoginPage() {
               <Link to="/register" className="text-emerald-300 hover:text-emerald-200">
                 Criar nova conta de cliente
               </Link>
+              <Link to="/consumer/login" className="text-white/60 hover:text-white/80">
+                Sou consumidor final
+              </Link>
             </div>
           ) : null}
         </div>

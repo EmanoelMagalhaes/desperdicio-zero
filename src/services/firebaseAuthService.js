@@ -117,6 +117,22 @@ async function createClientProfile(firestoreDb, uid, form, approvalStatus, metad
   return profile;
 }
 
+async function createConsumerProfile(firestoreDb, uid, form, metadata = {}) {
+  const { name, email } = form;
+
+  const profile = {
+    role: 'consumer',
+    name,
+    email,
+    createdAt: serverTimestamp(),
+    ...metadata,
+  };
+
+  await setDoc(doc(firestoreDb, 'users', uid), profile, { merge: true });
+
+  return profile;
+}
+
 export async function loginWithFirebase(mode, email, password) {
   if (!email || !password) {
     return { ok: false, error: 'Preencha e-mail e senha.' };
@@ -148,6 +164,11 @@ export async function loginWithFirebase(mode, email, password) {
       return { ok: false, error: 'Use o acesso de administrador para esta conta.' };
     }
 
+    if (mode === 'consumer' && normalizedRole !== 'consumer') {
+      await signOut(auth);
+      return { ok: false, error: 'Esta conta nao possui acesso de consumidor.' };
+    }
+
     if (mode === 'client') {
       await reload(credential.user);
 
@@ -171,6 +192,25 @@ export async function loginWithFirebase(mode, email, password) {
         await signOut(auth);
         return { ok: false, error: approvalError(status) };
       }
+    }
+
+    if (mode === 'consumer') {
+      await reload(credential.user);
+
+      if (!credential.user.emailVerified) {
+        await signOut(auth);
+        return { ok: false, error: 'Confirme seu e-mail antes de entrar. Verifique sua caixa de entrada.' };
+      }
+
+      await setDoc(
+        doc(db, 'users', credential.user.uid),
+        {
+          emailVerified: true,
+          emailVerifiedAt: serverTimestamp(),
+          updatedAt: serverTimestamp(),
+        },
+        { merge: true }
+      );
     }
 
     return {
@@ -315,6 +355,113 @@ export async function registerClientWithFirebase(form) {
   }
 }
 
+export async function registerConsumerWithFirebase(form) {
+  const { name, email, password } = form;
+
+  if (!name || !email || !password) {
+    return { ok: false, error: 'Preencha nome, e-mail e senha para criar sua conta.' };
+  }
+
+  let secondaryApp = null;
+  let secondaryAuth = null;
+  let secondaryDb = null;
+
+  try {
+    assertFirebaseReady();
+
+    const secondaryContext = createSecondaryAuthApp(`public-consumer-${Date.now()}`);
+    secondaryApp = secondaryContext.app;
+    secondaryAuth = secondaryContext.auth;
+    secondaryDb = secondaryContext.db;
+
+    const credential = await createUserWithEmailAndPassword(secondaryAuth, email, password);
+
+    await sendEmailVerification(credential.user);
+
+    await createConsumerProfile(
+      secondaryDb,
+      credential.user.uid,
+      { name, email },
+      {
+        emailVerified: false,
+        verificationEmailSentAt: serverTimestamp(),
+      }
+    );
+
+    return {
+      ok: true,
+      message: 'Cadastro criado. Confirme seu e-mail para acessar a area do consumidor.',
+    };
+  } catch (error) {
+    if (error?.code === 'auth/email-already-in-use' && secondaryAuth && secondaryDb) {
+      try {
+        const recovery = await signInWithEmailAndPassword(secondaryAuth, email, password);
+        const recoveryUser = recovery.user;
+
+        if (!recoveryUser.emailVerified) {
+          await sendEmailVerification(recoveryUser);
+        }
+
+        const profileSnapshot = await getDoc(doc(secondaryDb, 'users', recoveryUser.uid));
+
+        if (!profileSnapshot.exists()) {
+          await createConsumerProfile(
+            secondaryDb,
+            recoveryUser.uid,
+            { name, email },
+            {
+              emailVerified: Boolean(recoveryUser.emailVerified),
+              verificationEmailSentAt: serverTimestamp(),
+            }
+          );
+        } else {
+          const existingProfile = profileSnapshot.data() || {};
+
+          if (existingProfile.role && existingProfile.role !== 'consumer') {
+            return { ok: false, error: 'Esse e-mail pertence a outro tipo de conta.' };
+          }
+
+          await setDoc(
+            doc(secondaryDb, 'users', recoveryUser.uid),
+            {
+              name,
+              email,
+              emailVerified: Boolean(recoveryUser.emailVerified),
+              verificationEmailSentAt: serverTimestamp(),
+              updatedAt: serverTimestamp(),
+            },
+            { merge: true }
+          );
+        }
+
+        return {
+          ok: true,
+          message: 'Encontramos um cadastro anterior. Reenviamos a verificacao do e-mail.',
+        };
+      } catch (recoveryError) {
+        if (recoveryError?.code === 'auth/wrong-password' || recoveryError?.code === 'auth/invalid-credential') {
+          return {
+            ok: false,
+            error:
+              'Esse e-mail ja esta em uso. Se a conta for sua, use a senha original ou recupere o acesso.',
+          };
+        }
+      }
+    }
+
+    console.error('registerConsumerWithFirebase error:', error);
+    return { ok: false, error: mapAuthError(error) };
+  } finally {
+    if (secondaryAuth) {
+      signOut(secondaryAuth).catch(() => null);
+    }
+
+    if (secondaryApp) {
+      disposeFirebaseApp(secondaryApp).catch(() => null);
+    }
+  }
+}
+
 export async function sendPasswordResetWithFirebase(email) {
   if (!email) {
     return { ok: false, error: 'Informe o e-mail para recuperar a senha.' };
@@ -439,7 +586,7 @@ export function subscribeAuthSession(onChange) {
         return;
       }
 
-      if (normalizedRole === 'client') {
+      if (normalizedRole === 'client' || normalizedRole === 'consumer') {
         await reload(user);
 
         if (!user.emailVerified) {
@@ -448,7 +595,7 @@ export function subscribeAuthSession(onChange) {
           return;
         }
 
-        if (profile.approvalStatus && profile.approvalStatus !== APPROVAL_STATUS.APPROVED) {
+        if (normalizedRole === 'client' && profile.approvalStatus && profile.approvalStatus !== APPROVAL_STATUS.APPROVED) {
           await signOut(auth);
           onChange(null);
           return;

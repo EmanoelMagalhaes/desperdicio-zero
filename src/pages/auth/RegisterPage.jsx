@@ -134,9 +134,14 @@ export default function RegisterPage() {
         </div>
       ) : null}
 
-      <Link to="/login" className="mt-5 inline-block text-sm text-emerald-300 hover:text-emerald-200">
-        Ja tenho conta
-      </Link>
+      <div className="mt-5 flex flex-col gap-2 text-sm">
+        <Link to="/login" className="text-emerald-300 hover:text-emerald-200">
+          Ja tenho conta
+        </Link>
+        <Link to="/consumer/register" className="text-white/60 hover:text-white/80">
+          Sou consumidor final
+        </Link>
+      </div>
     </div>
   );
 }

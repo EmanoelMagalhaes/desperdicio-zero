@@ -2,6 +2,7 @@ import { Navigate, Route, Routes } from 'react-router-dom';
 import LoadingScreen from './components/common/LoadingScreen';
 import AdminLayout from './components/layout/AdminLayout';
 import ClientLayout from './components/layout/ClientLayout';
+import ConsumerLayout from './components/layout/ConsumerLayout';
 import PublicLayout from './components/layout/PublicLayout';
 import GuestRoute from './components/routing/GuestRoute';
 import ProtectedRoute from './components/routing/ProtectedRoute';
@@ -23,6 +24,11 @@ import DemoShopping from './pages/public/DemoShopping';
 import DemoTips from './pages/public/DemoTips';
 import LandingPage from './pages/public/LandingPage';
 import PendingApprovalPage from './pages/public/PendingApprovalPage';
+import OffersPage from './pages/consumer/OffersPage';
+import OfferDetailsPage from './pages/consumer/OfferDetailsPage';
+import MyOrdersPage from './pages/consumer/MyOrdersPage';
+import ConsumerLoginPage from './pages/consumer/ConsumerLoginPage';
+import ConsumerRegisterPage from './pages/consumer/ConsumerRegisterPage';
 
 export default function App() {
   const { ready } = useAppStore();
@@ -35,6 +41,8 @@ export default function App() {
     <Routes>
       <Route element={<PublicLayout />}>
         <Route index element={<LandingPage />} />
+        <Route path="/ofertas" element={<OffersPage />} />
+        <Route path="/ofertas/:id" element={<OfferDetailsPage />} />
         <Route path="/demo/kitchen" element={<DemoKitchen />} />
         <Route path="/demo/recipes" element={<DemoRecipes />} />
         <Route path="/demo/shopping" element={<DemoShopping />} />
@@ -54,6 +62,8 @@ export default function App() {
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
           <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+          <Route path="/consumer/login" element={<ConsumerLoginPage />} />
+          <Route path="/consumer/register" element={<ConsumerRegisterPage />} />
         </Route>
       </Route>
 
@@ -74,6 +84,12 @@ export default function App() {
           <Route path="/admin/dashboard" element={<AdminDashboard />} />
           <Route path="/admin/clientes" element={<ClientManager />} />
           <Route path="/admin/cliente" element={<ClientView />} />
+        </Route>
+      </Route>
+
+      <Route element={<ProtectedRoute allowRoles={['consumer']} />}>
+        <Route element={<ConsumerLayout />}>
+          <Route path="/meus-pedidos" element={<MyOrdersPage />} />
         </Route>
       </Route>
 

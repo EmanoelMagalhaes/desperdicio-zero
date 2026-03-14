@@ -5,7 +5,7 @@ const DEFAULT_ROLE_ROUTE = {
   [ROLES.ADMIN]: '/admin/dashboard',
   [ROLES.CLIENT]: '/app/dashboard',
   [ROLES.RESTAURANT]: '/app/dashboard',
-  [ROLES.CONSUMER]: '/',
+  [ROLES.CONSUMER]: '/meus-pedidos',
 };
 
 export function getDefaultRouteForRole(role) {
