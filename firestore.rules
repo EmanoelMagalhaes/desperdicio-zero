@@ -90,10 +90,26 @@ service cloud.firestore {
         && request.resource.data.total is number;
     }
 
+    function isValidOrderStatus() {
+      return request.resource.data.status in ['pending', 'confirmed', 'preparing', 'ready', 'completed', 'cancelled'];
+    }
+
+    function isOrderStatusUpdate() {
+      return request.resource.data.diff(resource.data).changedKeys().hasOnly(['status', 'timeline', 'updatedAt'])
+        && isValidOrderStatus()
+        && request.resource.data.timeline is list;
+    }
+
     match /orders/{orderId} {
       allow create: if isValidOrder() && (isGuestOrder() || isConsumerOrder());
-      allow read: if isAdmin() || isApprovedClient(resource.data.restaurantId);
-      allow update, delete: if false;
+      allow read: if isAdmin()
+        || isApprovedClient(resource.data.restaurantId)
+        || (request.auth != null
+          && resource.data.consumerIsGuest == false
+          && resource.data.consumerId == request.auth.uid);
+      allow update: if isAdmin()
+        || (isApprovedClient(resource.data.restaurantId) && isOrderStatusUpdate());
+      allow delete: if false;
     }
 
     match /{document=**} {

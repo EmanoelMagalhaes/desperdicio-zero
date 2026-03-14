@@ -1,4 +1,4 @@
-import { addDoc, collection, onSnapshot, query, serverTimestamp, where } from 'firebase/firestore';
+import { addDoc, collection, doc, onSnapshot, query, serverTimestamp, updateDoc, where } from 'firebase/firestore';
 import { assertFirebaseReady, db } from './firebaseClient';
 
 function mapOrders(snapshot) {
@@ -66,4 +66,26 @@ export async function createOrder(order) {
 
   const docRef = await addDoc(collection(db, 'orders'), payload);
   return { id: docRef.id, ...payload };
+}
+
+export async function updateOrderStatus(orderId, payload = {}) {
+  assertFirebaseReady();
+
+  if (!orderId) {
+    throw new Error('Pedido invalido.');
+  }
+
+  const nextStatus = payload.status;
+  const nextTimeline = Array.isArray(payload.timeline) ? payload.timeline : [
+    {
+      status: nextStatus,
+      at: new Date().toISOString(),
+    },
+  ];
+
+  await updateDoc(doc(db, 'orders', orderId), {
+    status: nextStatus,
+    updatedAt: serverTimestamp(),
+    timeline: nextTimeline,
+  });
 }

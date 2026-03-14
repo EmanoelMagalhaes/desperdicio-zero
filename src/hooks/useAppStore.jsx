@@ -31,7 +31,12 @@ import { backendAdapter } from '../services/backendAdapter';
 import { auth } from '../services/firebaseClient';
 import { loadState, persistState } from '../services/storageService';
 import { createOffer, deleteOffer, subscribeOffers, updateOffer } from '../services/offersService';
-import { createOrder as createOrderRemote, subscribeOrdersByConsumer, subscribeOrdersByRestaurant } from '../services/ordersService';
+import {
+  createOrder as createOrderRemote,
+  subscribeOrdersByConsumer,
+  subscribeOrdersByRestaurant,
+  updateOrderStatus as updateOrderStatusRemote,
+} from '../services/ordersService';
 import { daysUntil } from '../utils/date';
 import { downloadJson } from '../utils/export';
 import { createId } from '../utils/ids';
@@ -663,6 +668,55 @@ export function AppStoreProvider({ children }) {
     },
     [firebaseMode]
   );
+
+  const updateOrderStatus = useCallback(
+    async (orderId, nextStatus) => {
+      if (!orderId) return { ok: false, error: 'Pedido invalido.' };
+
+      const allowed = ['pending', 'confirmed', 'preparing', 'ready', 'completed', 'cancelled'];
+      if (!allowed.includes(nextStatus)) {
+        return { ok: false, error: 'Status invalido.' };
+      }
+
+      const current = orders.find((order) => order.id === orderId);
+      if (!current) {
+        return { ok: false, error: 'Pedido nao encontrado.' };
+      }
+
+      const nextTimeline = [
+        ...(current.timeline || []),
+        {
+          status: nextStatus,
+          at: new Date().toISOString(),
+        },
+      ];
+
+      try {
+        if (firebaseMode) {
+          await updateOrderStatusRemote(orderId, { status: nextStatus, timeline: nextTimeline });
+        }
+
+        setState((prev) => ({
+          ...prev,
+          orders: (prev.orders || []).map((order) =>
+            order.id === orderId
+              ? {
+                  ...order,
+                  status: nextStatus,
+                  timeline: nextTimeline,
+                  updatedAt: new Date().toISOString(),
+                }
+              : order
+          ),
+        }));
+
+        return { ok: true };
+      } catch (error) {
+        return { ok: false, error: error?.message || 'Nao foi possivel atualizar o pedido.' };
+      }
+    },
+    [firebaseMode, orders]
+  );
   const requestPasswordReset = useCallback(
     async (email) => {
       if (!email) {
@@ -965,6 +1019,7 @@ export function AppStoreProvider({ children }) {
       createRestaurantOffer,
       updateRestaurantOffer,
       deleteRestaurantOffer,
+      updateOrderStatus,
       addToCart,
       replaceCartWithOffer,
       updateCartItem,
@@ -1005,6 +1060,7 @@ export function AppStoreProvider({ children }) {
       createRestaurantOffer,
       updateRestaurantOffer,
       deleteRestaurantOffer,
+      updateOrderStatus,
       setClientApproval,
       logout,
       addInventory,
