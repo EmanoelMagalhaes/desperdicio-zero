@@ -72,6 +72,12 @@ service cloud.firestore {
         && request.resource.data.consumerId == request.auth.uid;
     }
 
+    function isConsumerReader() {
+      return request.auth != null
+        && resource.data.consumerId == request.auth.uid
+        && resource.data.consumerIsGuest != true;
+    }
+
     function isValidOrder() {
       return request.resource.data.status == 'pending'
         && request.resource.data.restaurantId is string
@@ -104,9 +110,7 @@ service cloud.firestore {
       allow create: if isValidOrder() && (isGuestOrder() || isConsumerOrder());
       allow read: if isAdmin()
         || isApprovedClient(resource.data.restaurantId)
-        || (request.auth != null
-          && resource.data.consumerIsGuest == false
-          && resource.data.consumerId == request.auth.uid);
+        || isConsumerReader();
       allow update: if isAdmin()
         || (isApprovedClient(resource.data.restaurantId) && isOrderStatusUpdate());
       allow delete: if false;
