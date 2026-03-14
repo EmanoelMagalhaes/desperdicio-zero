@@ -497,17 +497,31 @@ export function AppStoreProvider({ children }) {
       const isGuest = firebaseMode ? !hasAuthUser : !session;
       const consumerId = hasAuthUser ? authUser.uid : (session?.id || createId('guest'));
 
+      const consumerName = String(payload.consumerName || '').trim();
+      const consumerEmail = String(payload.consumerEmail || '').trim();
+      const consumerPhone = String(payload.consumerPhone || '').trim();
+      const deliveryAddress = String(payload.deliveryAddress || '').trim();
+      const paymentMethod = String(payload.paymentMethod || '').trim();
+
+      if (!consumerName || !consumerEmail || !consumerPhone || !paymentMethod) {
+        return { ok: false, error: 'Preencha nome, WhatsApp, e-mail e forma de pagamento.' };
+      }
+
+      if (payload.receivingMethod === 'entrega' && !deliveryAddress) {
+        return { ok: false, error: 'Informe o endereco para entrega.' };
+      }
+
       const orderPayload = {
         restaurantId,
         restaurantName: cart.restaurantName || 'Restaurante',
         consumerId,
         consumerIsGuest: Boolean(isGuest),
-        consumerName: payload.consumerName,
-        consumerEmail: payload.consumerEmail,
-        consumerPhone: payload.consumerPhone,
+        consumerName,
+        consumerEmail,
+        consumerPhone,
         receivingMethod: payload.receivingMethod,
-        deliveryAddress: payload.deliveryAddress || '',
-        paymentMethod: payload.paymentMethod,
+        deliveryAddress,
+        paymentMethod,
         notes: payload.notes || '',
         items: cart.items,
         total: cartTotal,
@@ -525,8 +539,32 @@ export function AppStoreProvider({ children }) {
       try {
         let createdOrder = orderPayload;
         if (firebaseMode) {
+          const isValidOrder =
+            orderPayload.status === 'pending'
+            && typeof orderPayload.restaurantId === 'string'
+            && typeof orderPayload.restaurantName === 'string'
+            && typeof orderPayload.consumerName === 'string'
+            && typeof orderPayload.consumerEmail === 'string'
+            && typeof orderPayload.consumerPhone === 'string'
+            && ['retirada', 'entrega'].includes(orderPayload.receivingMethod)
+            && (orderPayload.receivingMethod === 'entrega'
+              ? typeof orderPayload.deliveryAddress === 'string' && orderPayload.deliveryAddress.length > 0
+              : true)
+            && typeof orderPayload.paymentMethod === 'string'
+            && Array.isArray(orderPayload.items)
+            && orderPayload.items.length > 0
+            && typeof orderPayload.total === 'number';
+          const isGuestOrder = !authUser
+            && orderPayload.consumerIsGuest === true
+            && typeof orderPayload.consumerId === 'string'
+            && /^guest-/.test(orderPayload.consumerId);
+          const isConsumerOrder = Boolean(authUser)
+            && orderPayload.consumerIsGuest === false
+            && orderPayload.consumerId === authUser?.uid;
+
           console.info('[orders] session', session ? { id: session.id, role: session.role } : null);
           console.info('[orders] authUser', authUser ? { uid: authUser.uid, email: authUser.email } : null);
+          console.info('[orders] ruleCheck', { isValidOrder, isGuestOrder, isConsumerOrder });
           console.info('[orders] payload', orderPayload);
           const remoteOrder = await createOrderRemote(orderPayload);
           createdOrder = { ...orderPayload, id: remoteOrder.id };
