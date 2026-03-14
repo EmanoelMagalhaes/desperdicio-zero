@@ -139,6 +139,7 @@ export function AppStoreProvider({ children }) {
           ...prev,
           ...createEmptyOperationalState(),
           offers: prev.offers || [],
+          orders: prev.orders || [],
         }));
         setAdminSelectedClientId('');
         return;
