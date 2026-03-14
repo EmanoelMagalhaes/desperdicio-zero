@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import SectionTitle from '../../components/common/SectionTitle';
 import { useAppStore } from '../../hooks/useAppStore';
 
@@ -64,8 +64,22 @@ function shortOrderId(orderId) {
 }
 
 export default function RestaurantOrdersPage() {
-  const { restaurantOrders = [], ordersStatus, ordersError, updateOrderStatus } = useAppStore();
+  const {
+    restaurantOrders = [],
+    ordersStatus,
+    ordersError,
+    updateOrderStatus,
+    session,
+    updateAccountAddress,
+  } = useAppStore();
   const [actionError, setActionError] = useState('');
+  const [address, setAddress] = useState(session?.address || '');
+  const [saving, setSaving] = useState(false);
+  const [addressFeedback, setAddressFeedback] = useState('');
+
+  useEffect(() => {
+    setAddress(session?.address || '');
+  }, [session?.address]);
 
   async function handleStatusChange(orderId, nextStatus) {
     setActionError('');
@@ -75,6 +89,25 @@ export default function RestaurantOrdersPage() {
     }
   }
 
+  async function handleSaveAddress() {
+    if (!address) {
+      setAddressFeedback('Informe um endereco valido.');
+      return;
+    }
+
+    setSaving(true);
+    setAddressFeedback('');
+    const result = await updateAccountAddress(address);
+    setSaving(false);
+
+    if (!result.ok) {
+      setAddressFeedback(result.error || 'Nao foi possivel salvar o endereco.');
+      return;
+    }
+
+    setAddressFeedback('Endereco atualizado com sucesso.');
+  }
+
   return (
     <div>
       <SectionTitle
@@ -82,6 +115,30 @@ export default function RestaurantOrdersPage() {
         title="Acompanhe os pedidos do seu restaurante"
         text="Veja os pedidos enviados pelos consumidores e organize a operacao."
       />
+
+      <div className="mb-6 rounded-[28px] border border-white/10 bg-white/[0.04] p-6">
+        <div className="text-sm uppercase tracking-[0.2em] text-emerald-300">Endereco do restaurante</div>
+        <div className="mt-4 flex flex-col gap-3 md:flex-row md:items-center">
+          <input
+            value={address}
+            onChange={(event) => setAddress(event.target.value)}
+            className="flex-1 rounded-2xl border border-white/10 bg-neutral-900 px-4 py-3 outline-none placeholder:text-white/30 focus:border-emerald-400"
+            placeholder="Endereco de retirada"
+          />
+          <button
+            onClick={handleSaveAddress}
+            disabled={saving}
+            className="rounded-2xl bg-emerald-500 px-5 py-3 font-semibold text-neutral-950 transition hover:scale-[1.01] disabled:opacity-60"
+          >
+            {saving ? 'Salvando...' : 'Salvar endereco'}
+          </button>
+        </div>
+        {addressFeedback ? (
+          <div className="mt-3 rounded-2xl border border-white/10 bg-neutral-900 p-3 text-sm text-white/70">
+            {addressFeedback}
+          </div>
+        ) : null}
+      </div>
 
       {ordersStatus === 'error' ? (
         <div className="rounded-2xl border border-amber-500/20 bg-amber-500/10 p-4 text-amber-100">
