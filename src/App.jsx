@@ -29,6 +29,8 @@ import OfferDetailsPage from './pages/consumer/OfferDetailsPage';
 import MyOrdersPage from './pages/consumer/MyOrdersPage';
 import ConsumerLoginPage from './pages/consumer/ConsumerLoginPage';
 import ConsumerRegisterPage from './pages/consumer/ConsumerRegisterPage';
+import OffersListPage from './pages/restaurant/OffersListPage';
+import OfferFormPage from './pages/restaurant/OfferFormPage';
 
 export default function App() {
   const { ready } = useAppStore();
@@ -67,7 +69,7 @@ export default function App() {
         </Route>
       </Route>
 
-      <Route element={<ProtectedRoute allowRoles={['client']} />}>
+      <Route element={<ProtectedRoute allowRoles={['client', 'restaurant']} />}>
         <Route element={<ClientLayout />}>
           <Route path="/app" element={<Navigate to="/app/dashboard" replace />} />
           <Route path="/app/dashboard" element={<DashboardPage />} />
@@ -75,6 +77,9 @@ export default function App() {
           <Route path="/app/shopping" element={<ShoppingPage />} />
           <Route path="/app/recipes" element={<RecipesPage />} />
           <Route path="/app/tips" element={<TipsPage />} />
+          <Route path="/restaurante/ofertas" element={<OffersListPage />} />
+          <Route path="/restaurante/ofertas/nova" element={<OfferFormPage />} />
+          <Route path="/restaurante/ofertas/:id/editar" element={<OfferFormPage />} />
         </Route>
       </Route>
 

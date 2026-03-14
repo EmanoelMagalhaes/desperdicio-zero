@@ -29,7 +29,7 @@ import {
 } from '../services/firebaseDataService';
 import { backendAdapter } from '../services/backendAdapter';
 import { loadState, persistState } from '../services/storageService';
-import { subscribeOffers } from '../services/offersService';
+import { createOffer, deleteOffer, subscribeOffers, updateOffer } from '../services/offersService';
 import { subscribeOrdersByConsumer } from '../services/ordersService';
 import { daysUntil } from '../utils/date';
 import { downloadJson } from '../utils/export';
@@ -60,6 +60,15 @@ function createEmptyOperationalState() {
     offers: [],
     orders: [],
   };
+}
+
+function upsertOffer(list, offer) {
+  const index = list.findIndex((item) => item.id === offer.id);
+  if (index === -1) return [...list, offer];
+
+  const next = [...list];
+  next[index] = { ...next[index], ...offer };
+  return next;
 }
 
 export function AppStoreProvider({ children }) {
@@ -278,6 +287,12 @@ export function AppStoreProvider({ children }) {
     if (!session?.id) return [];
     return orders.filter((order) => order.consumerId === session.id);
   }, [orders, session?.id]);
+  const restaurantOffers = useMemo(() => {
+    if (!session) return [];
+    const restaurantId = session.role === 'admin' ? activeClientId : session.id;
+    if (!restaurantId) return [];
+    return offers.filter((offer) => offer.restaurantId === restaurantId);
+  }, [offers, session, activeClientId]);
 
   const demoInventory = defaultState.inventories['cliente-demo'] || [];
   const demoShoppingList = defaultState.shoppingLists['cliente-demo'] || [];
@@ -356,6 +371,97 @@ export function AppStoreProvider({ children }) {
       };
     },
     [firebaseMode, state]
+  );
+
+  const createRestaurantOffer = useCallback(
+    async (payload) => {
+      if (!session) return { ok: false, error: 'Sessao invalida.' };
+
+      const restaurantId = session.role === 'admin' ? activeClientId : session.id;
+      if (!restaurantId) return { ok: false, error: 'Restaurante nao identificado.' };
+
+      const basePayload = {
+        ...payload,
+        restaurantId,
+        restaurantName: payload.restaurantName || activeClient?.name || session.name || 'Restaurante',
+        isActive: payload.isActive !== false,
+      };
+
+      try {
+        if (firebaseMode) {
+          const created = await createOffer(basePayload);
+          setState((prev) => ({
+            ...prev,
+            offers: upsertOffer(prev.offers || [], created),
+          }));
+          return { ok: true, offer: created };
+        }
+
+        const created = {
+          ...basePayload,
+          id: payload.id || createId('offer'),
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        };
+        setState((prev) => ({
+          ...prev,
+          offers: upsertOffer(prev.offers || [], created),
+        }));
+        return { ok: true, offer: created };
+      } catch (error) {
+        return { ok: false, error: error?.message || 'Nao foi possivel criar a oferta.' };
+      }
+    },
+    [session, activeClientId, activeClient, firebaseMode]
+  );
+
+  const updateRestaurantOffer = useCallback(
+    async (offerId, updates) => {
+      if (!offerId) return { ok: false, error: 'Oferta invalida.' };
+
+      try {
+        if (firebaseMode) {
+          const payload = await updateOffer(offerId, updates);
+          setState((prev) => ({
+            ...prev,
+            offers: upsertOffer(prev.offers || [], { id: offerId, ...payload }),
+          }));
+          return { ok: true };
+        }
+
+        setState((prev) => ({
+          ...prev,
+          offers: (prev.offers || []).map((offer) =>
+            offer.id === offerId ? { ...offer, ...updates, updatedAt: new Date().toISOString() } : offer
+          ),
+        }));
+        return { ok: true };
+      } catch (error) {
+        return { ok: false, error: error?.message || 'Nao foi possivel atualizar a oferta.' };
+      }
+    },
+    [firebaseMode]
+  );
+
+  const deleteRestaurantOffer = useCallback(
+    async (offerId) => {
+      if (!offerId) return { ok: false, error: 'Oferta invalida.' };
+
+      try {
+        if (firebaseMode) {
+          await deleteOffer(offerId);
+        }
+
+        setState((prev) => ({
+          ...prev,
+          offers: (prev.offers || []).filter((offer) => offer.id !== offerId),
+        }));
+        return { ok: true };
+      } catch (error) {
+        return { ok: false, error: error?.message || 'Nao foi possivel remover a oferta.' };
+      }
+    },
+    [firebaseMode]
   );
   const requestPasswordReset = useCallback(
     async (email) => {
@@ -639,6 +745,7 @@ export function AppStoreProvider({ children }) {
       offersStatus,
       offersError,
       consumerOrders,
+      restaurantOffers,
       ordersStatus,
       ordersError,
       demoInventory,
@@ -651,6 +758,9 @@ export function AppStoreProvider({ children }) {
       registerConsumer,
       requestPasswordReset,
       createClientByAdmin,
+      createRestaurantOffer,
+      updateRestaurantOffer,
+      deleteRestaurantOffer,
       setClientApproval,
       logout,
       addInventory,
@@ -682,6 +792,9 @@ export function AppStoreProvider({ children }) {
       registerConsumer,
       requestPasswordReset,
       createClientByAdmin,
+      createRestaurantOffer,
+      updateRestaurantOffer,
+      deleteRestaurantOffer,
       setClientApproval,
       logout,
       addInventory,
@@ -696,6 +809,7 @@ export function AppStoreProvider({ children }) {
       offersStatus,
       offersError,
       consumerOrders,
+      restaurantOffers,
       ordersStatus,
       ordersError,
     ]

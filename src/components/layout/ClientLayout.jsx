@@ -1,10 +1,11 @@
-import { ChefHat, Home, Lightbulb, Package, ShoppingCart } from 'lucide-react';
+import { ChefHat, Home, Lightbulb, Package, ShoppingCart, Tag } from 'lucide-react';
 import AppShell from './AppShell';
 
 const menuItems = [
   { to: '/app/dashboard', label: 'Home', icon: Home },
   { to: '/app/inventory', label: 'Minha despensa', icon: Package },
   { to: '/app/shopping', label: 'Lista de compras', icon: ShoppingCart },
+  { to: '/restaurante/ofertas', label: 'Ofertas', icon: Tag },
   { to: '/app/recipes', label: 'Receitas sugeridas', icon: ChefHat },
   { to: '/app/tips', label: 'Dicas e desafios', icon: Lightbulb },
 ];
