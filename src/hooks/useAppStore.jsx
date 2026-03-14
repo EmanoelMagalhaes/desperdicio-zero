@@ -557,7 +557,14 @@ export function AppStoreProvider({ children }) {
       const authUser = firebaseMode ? auth?.currentUser : null;
       const hasAuthUser = Boolean(authUser);
       const isGuest = firebaseMode ? !hasAuthUser : !session;
-      const consumerId = hasAuthUser ? authUser.uid : (session?.id || createId('guest'));
+
+      if (firebaseMode && session?.role === 'consumer' && !hasAuthUser) {
+        return { ok: false, error: 'Sessao de consumidor invalida. Faca login novamente.' };
+      }
+
+      const consumerId = hasAuthUser
+        ? authUser.uid
+        : (firebaseMode ? createId('guest') : (session?.id || createId('guest')));
 
       const orderPayload = {
         restaurantId,

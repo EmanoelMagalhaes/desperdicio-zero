@@ -9,6 +9,19 @@ function formatCurrency(value) {
   return amount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 }
 
+function formatPhone(value) {
+  const digits = value.replace(/\D/g, '').slice(0, 11);
+  if (!digits) return '';
+
+  const area = digits.slice(0, 2);
+  const middle = digits.slice(2, 7);
+  const last = digits.slice(7, 11);
+
+  if (digits.length <= 2) return `(${area}`;
+  if (digits.length <= 7) return `(${area}) ${digits.slice(2)}`;
+  return `(${area}) ${middle}${last ? `-${last}` : ''}`;
+}
+
 export default function CheckoutPage() {
   const navigate = useNavigate();
   const {
@@ -143,7 +156,9 @@ export default function CheckoutPage() {
             />
             <input
               value={form.consumerPhone}
-              onChange={(event) => setForm({ ...form, consumerPhone: event.target.value })}
+              onChange={(event) =>
+                setForm({ ...form, consumerPhone: formatPhone(event.target.value) })
+              }
               className="w-full rounded-2xl border border-white/10 bg-neutral-900 px-4 py-3 outline-none placeholder:text-white/30 focus:border-emerald-400"
               placeholder="WhatsApp"
             />
