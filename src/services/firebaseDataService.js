@@ -253,14 +253,10 @@ export async function updateUserAddress(uid, address) {
   if (!uid) return { ok: false, error: 'Usuario invalido.' };
   if (!address) return { ok: false, error: 'Endereco invalido.' };
 
-  await setDoc(
-    userDocRef(uid),
-    {
-      address,
-      updatedAt: serverTimestamp(),
-    },
-    { merge: true }
-  );
+  await updateDoc(userDocRef(uid), {
+    address,
+    updatedAt: serverTimestamp(),
+  });
 
   return { ok: true };
 }

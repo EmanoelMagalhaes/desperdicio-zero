@@ -994,7 +994,11 @@ export function AppStoreProvider({ children }) {
 
       try {
         if (firebaseMode) {
-          const result = await updateUserAddress(session.id, address);
+          const authUser = auth?.currentUser;
+          if (!authUser) {
+            return { ok: false, error: 'Sessao invalida. Recarregue e tente novamente.' };
+          }
+          const result = await updateUserAddress(authUser.uid, address);
           if (!result.ok) return result;
         }
 
