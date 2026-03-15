@@ -575,6 +575,7 @@ export function AppStoreProvider({ children }) {
         consumerName: payload.consumerName,
         consumerEmail: payload.consumerEmail,
         consumerPhone: payload.consumerPhone,
+        consumerAddress: payload.deliveryAddress || session?.address || '',
         receivingMethod: payload.receivingMethod,
         deliveryAddress: payload.deliveryAddress || '',
         paymentMethod: payload.paymentMethod,
