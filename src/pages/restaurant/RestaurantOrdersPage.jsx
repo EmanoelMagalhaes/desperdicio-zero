@@ -173,10 +173,15 @@ export default function RestaurantOrdersPage() {
                   Pedido #{shortOrderId(order.id)}
                 </div>
                 <div className="mt-2 text-xl font-black">{order.consumerName || 'Consumidor'}</div>
-                <div className="mt-2 text-sm text-white/60">
-                  WhatsApp: <span className="text-white/90">{order.consumerPhone || '-'}</span>
-                </div>
+            <div className="mt-2 text-sm text-white/60">
+              WhatsApp: <span className="text-white/90">{order.consumerPhone || '-'}</span>
+            </div>
+            {order.receivingMethod === 'entrega' ? (
+              <div className="mt-2 text-sm text-white/60">
+                Endereco: <span className="text-white/90">{order.deliveryAddress || 'Nao informado'}</span>
               </div>
+            ) : null}
+          </div>
               <div className="flex flex-col items-start gap-2 md:items-end">
                 <span className={`rounded-full px-3 py-1 text-xs ${STATUS_TONES[order.status] || 'bg-white/10 text-white/70'}`}>
                   {getStatusLabel(order.status)}

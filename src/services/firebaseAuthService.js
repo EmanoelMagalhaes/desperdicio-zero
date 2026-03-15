@@ -76,6 +76,7 @@ function toSessionAccount(uid, profile, emailVerified = false) {
     name: profile.name || profile.email || 'Usuario',
     email: profile.email || '',
     businessType: profile.businessType || 'Operacao',
+    address: profile.address || '',
     approvalStatus: profile.approvalStatus || APPROVAL_STATUS.APPROVED,
     emailVerified,
   };
