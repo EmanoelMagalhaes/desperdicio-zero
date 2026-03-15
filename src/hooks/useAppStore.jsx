@@ -992,23 +992,31 @@ export function AppStoreProvider({ children }) {
       if (!session?.id) return { ok: false, error: 'Sessao invalida.' };
       if (!address) return { ok: false, error: 'Informe um endereco valido.' };
 
-      if (firebaseMode) {
-        const result = await updateUserAddress(session.id, address);
-        if (!result.ok) return result;
+      try {
+        if (firebaseMode) {
+          const authUser = auth?.currentUser;
+          if (!authUser) {
+            return { ok: false, error: 'Sessao invalida. Recarregue e tente novamente.' };
+          }
+          const result = await updateUserAddress(authUser.uid, address);
+          if (!result.ok) return result;
+        }
+
+        setSession((prev) => (prev ? { ...prev, address } : prev));
+        setState((prev) => ({
+          ...prev,
+          clientAccounts: prev.clientAccounts.map((item) =>
+            item.id === session.id ? { ...item, address } : item
+          ),
+          consumerAccounts: prev.consumerAccounts.map((item) =>
+            item.id === session.id ? { ...item, address } : item
+          ),
+        }));
+
+        return { ok: true };
+      } catch (error) {
+        return { ok: false, error: error?.message || 'Nao foi possivel salvar o endereco.' };
       }
-
-      setSession((prev) => (prev ? { ...prev, address } : prev));
-      setState((prev) => ({
-        ...prev,
-        clientAccounts: prev.clientAccounts.map((item) =>
-          item.id === session.id ? { ...item, address } : item
-        ),
-        consumerAccounts: prev.consumerAccounts.map((item) =>
-          item.id === session.id ? { ...item, address } : item
-        ),
-      }));
-
-      return { ok: true };
     },
     [session, firebaseMode]
   );
