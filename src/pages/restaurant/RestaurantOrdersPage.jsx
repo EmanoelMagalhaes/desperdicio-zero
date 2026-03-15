@@ -176,9 +176,12 @@ export default function RestaurantOrdersPage() {
             <div className="mt-2 text-sm text-white/60">
               WhatsApp: <span className="text-white/90">{order.consumerPhone || '-'}</span>
             </div>
-            {order.receivingMethod === 'entrega' ? (
+            {order.consumerAddress || order.deliveryAddress || order.receivingMethod === 'entrega' ? (
               <div className="mt-2 text-sm text-white/60">
-                Endereco: <span className="text-white/90">{order.deliveryAddress || 'Nao informado'}</span>
+                Endereco:{' '}
+                <span className="text-white/90">
+                  {order.consumerAddress || order.deliveryAddress || 'Nao informado'}
+                </span>
               </div>
             ) : null}
           </div>
