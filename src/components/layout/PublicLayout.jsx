@@ -22,7 +22,7 @@ export default function PublicLayout() {
     }
 
     if (session?.role === 'consumer') {
-      navigate('/meus-pedidos');
+      navigate('/ofertas');
       return;
     }
 
