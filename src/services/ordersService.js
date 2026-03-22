@@ -5,6 +5,22 @@ function mapOrders(snapshot) {
   return snapshot.docs.map((docItem) => ({ id: docItem.id, ...docItem.data() }));
 }
 
+export function subscribeAllOrders(onChange, onError) {
+  assertFirebaseReady();
+
+  const ordersQuery = query(collection(db, 'orders'));
+
+  return onSnapshot(
+    ordersQuery,
+    (snapshot) => {
+      onChange(mapOrders(snapshot));
+    },
+    (error) => {
+      if (onError) onError(error);
+    }
+  );
+}
+
 export function subscribeOrdersByConsumer(consumerId, onChange, onError) {
   assertFirebaseReady();
 

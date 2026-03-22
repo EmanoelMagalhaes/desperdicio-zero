@@ -34,6 +34,7 @@ import { loadState, persistState } from '../services/storageService';
 import { createOffer, deleteOffer, subscribeOffers, updateOffer } from '../services/offersService';
 import {
   createOrder as createOrderRemote,
+  subscribeAllOrders,
   subscribeOrdersByConsumer,
   subscribeOrdersByRestaurant,
   updateOrderStatus as updateOrderStatusRemote,
@@ -307,6 +308,22 @@ export function AppStoreProvider({ children }) {
     if (session.role === 'client') {
       const unsubscribe = subscribeOrdersByRestaurant(
         session.id,
+        (items) => {
+          setState((prev) => ({ ...prev, orders: items }));
+          setOrdersStatus('ready');
+          setOrdersError('');
+        },
+        () => {
+          setOrdersStatus('error');
+          setOrdersError('Nao foi possivel carregar pedidos no Firebase.');
+        }
+      );
+
+      return unsubscribe;
+    }
+
+    if (session.role === 'admin') {
+      const unsubscribe = subscribeAllOrders(
         (items) => {
           setState((prev) => ({ ...prev, orders: items }));
           setOrdersStatus('ready');
