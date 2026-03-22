@@ -69,6 +69,7 @@ export default function ClientView() {
           shoppingList={shoppingList}
           sessionName={activeClient?.name || 'Cliente selecionado'}
           onGoTo={mapDashboardNavigation}
+          showOperational={false}
         />
       ) : null}
 
