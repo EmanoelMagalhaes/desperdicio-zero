@@ -77,27 +77,12 @@ export default function AdminSummarySection({ state }) {
         text="Acompanhe indicadores gerais e execute operacoes nos ambientes dos clientes em tempo real."
       />
 
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <MetricCard label="Clientes cadastrados" value={String(totalClients)} icon={User} tone="emerald" />
-        <MetricCard label="Produtos monitorados" value={String(totalProducts)} icon={Package} tone="blue" />
-        <MetricCard label="Media por cliente" value={String(averageProducts)} icon={BarChart3} tone="amber" />
-        <MetricCard
-          label="Listas de compra"
-          value={String(shoppingCounts.reduce((sum, value) => sum + value, 0))}
-          icon={ShoppingCart}
-          tone="red"
-        />
-      </div>
-
       <div className="mt-8 grid gap-6 lg:grid-cols-[1.05fr_0.95fr]">
         <div className="rounded-[30px] border border-white/10 bg-white/[0.04] p-6">
           <div className="flex items-center justify-between gap-4">
             <div>
               <div className="text-sm uppercase tracking-[0.22em] text-emerald-300">Visao global</div>
               <h2 className="mt-2 text-2xl font-black">Indicadores da plataforma</h2>
-            </div>
-            <div className="rounded-2xl border border-white/10 bg-neutral-900 px-4 py-2 text-sm text-white/70">
-              Pendentes: <span className="text-white/90">{pendingClients}</span>
             </div>
           </div>
 
@@ -107,6 +92,7 @@ export default function AdminSummarySection({ state }) {
             <MetricCard label="Em preparo" value={String(preparingOrders)} icon={ShieldCheck} tone="emerald" />
             <MetricCard label="Pedidos prontos" value={String(readyOrders)} icon={ShieldCheck} tone="emerald" />
             <MetricCard label="Ofertas ativas" value={String(activeOffers)} icon={Tag} tone="blue" />
+            <MetricCard label="Cadastros pendentes" value={String(pendingClients)} icon={User} tone="amber" />
           </div>
 
           <div className="mt-6 grid gap-3 sm:grid-cols-2">
@@ -155,6 +141,18 @@ export default function AdminSummarySection({ state }) {
             )}
           </div>
         </div>
+      </div>
+
+      <div className="mt-8 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <MetricCard label="Clientes cadastrados" value={String(totalClients)} icon={User} tone="emerald" />
+        <MetricCard label="Produtos monitorados" value={String(totalProducts)} icon={Package} tone="blue" />
+        <MetricCard label="Media por cliente" value={String(averageProducts)} icon={BarChart3} tone="amber" />
+        <MetricCard
+          label="Listas de compra"
+          value={String(shoppingCounts.reduce((sum, value) => sum + value, 0))}
+          icon={ShoppingCart}
+          tone="red"
+        />
       </div>
 
       <div className="mt-8 rounded-[30px] border border-white/10 bg-white/[0.04] p-6">
