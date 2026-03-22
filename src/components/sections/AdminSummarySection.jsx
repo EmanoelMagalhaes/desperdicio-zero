@@ -1,14 +1,64 @@
-import { BarChart3, Package, ShoppingCart, User } from 'lucide-react';
+import { BarChart3, ClipboardList, Package, ShieldCheck, ShoppingCart, Tag, Timer, User } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import MetricCard from '../common/MetricCard';
 import SectionTitle from '../common/SectionTitle';
 import { daysUntil } from '../../utils/date';
 
+function parseOrderDate(value) {
+  if (!value) return null;
+  if (typeof value === 'string' || typeof value === 'number') {
+    return new Date(value);
+  }
+  if (typeof value.toDate === 'function') {
+    return value.toDate();
+  }
+  if (typeof value.seconds === 'number') {
+    return new Date(value.seconds * 1000);
+  }
+  return null;
+}
+
+function formatOrderDate(value) {
+  const date = parseOrderDate(value);
+  if (!date || Number.isNaN(date.getTime())) return 'Data indisponivel';
+  return date.toLocaleString('pt-BR');
+}
+
+function shortOrderId(orderId) {
+  if (!orderId) return '--';
+  return String(orderId).slice(-6).toUpperCase();
+}
+
+function formatCurrency(value) {
+  const amount = Number(value || 0);
+  return amount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+}
+
 export default function AdminSummarySection({ state }) {
+  const navigate = useNavigate();
   const totalClients = state.clientAccounts.length;
   const inventoryCounts = Object.values(state.inventories).map((items) => items.length);
   const shoppingCounts = Object.values(state.shoppingLists).map((items) => items.length);
   const totalProducts = inventoryCounts.reduce((acc, value) => acc + value, 0);
   const averageProducts = totalClients ? Math.round(totalProducts / totalClients) : 0;
+  const pendingClients = state.clientAccounts.filter((client) => client.approvalStatus === 'pending').length;
+
+  const orders = state.orders || [];
+  const offers = state.offers || [];
+
+  const totalOrders = orders.length;
+  const pendingOrders = orders.filter((order) => order.status === 'pending').length;
+  const preparingOrders = orders.filter((order) => order.status === 'preparing').length;
+  const readyOrders = orders.filter((order) => order.status === 'ready').length;
+  const activeOffers = offers.filter((offer) => offer?.isActive !== false).length;
+
+  const recentOrders = [...orders]
+    .sort((a, b) => {
+      const aTime = parseOrderDate(a.createdAt || a.updatedAt)?.getTime() || 0;
+      const bTime = parseOrderDate(b.createdAt || b.updatedAt)?.getTime() || 0;
+      return bTime - aTime;
+    })
+    .slice(0, 5);
 
   const clientSummary = state.clientAccounts.map((client) => ({
     id: client.id,
@@ -37,6 +87,74 @@ export default function AdminSummarySection({ state }) {
           icon={ShoppingCart}
           tone="red"
         />
+      </div>
+
+      <div className="mt-8 grid gap-6 lg:grid-cols-[1.05fr_0.95fr]">
+        <div className="rounded-[30px] border border-white/10 bg-white/[0.04] p-6">
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <div className="text-sm uppercase tracking-[0.22em] text-emerald-300">Visao global</div>
+              <h2 className="mt-2 text-2xl font-black">Indicadores da plataforma</h2>
+            </div>
+            <div className="rounded-2xl border border-white/10 bg-neutral-900 px-4 py-2 text-sm text-white/70">
+              Pendentes: <span className="text-white/90">{pendingClients}</span>
+            </div>
+          </div>
+
+          <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            <MetricCard label="Total de pedidos" value={String(totalOrders)} icon={ClipboardList} tone="blue" />
+            <MetricCard label="Pedidos pendentes" value={String(pendingOrders)} icon={Timer} tone="amber" />
+            <MetricCard label="Em preparo" value={String(preparingOrders)} icon={ShieldCheck} tone="emerald" />
+            <MetricCard label="Pedidos prontos" value={String(readyOrders)} icon={ShieldCheck} tone="emerald" />
+            <MetricCard label="Ofertas ativas" value={String(activeOffers)} icon={Tag} tone="blue" />
+          </div>
+
+          <div className="mt-6 grid gap-3 sm:grid-cols-2">
+            <button
+              onClick={() => navigate('/admin/clientes')}
+              className="rounded-2xl border border-white/10 px-4 py-3 text-sm font-semibold text-white/80 transition hover:bg-white/[0.05]"
+            >
+              Gerenciar clientes
+            </button>
+            <button
+              onClick={() => navigate('/admin/cliente')}
+              className="rounded-2xl border border-white/10 px-4 py-3 text-sm font-semibold text-white/80 transition hover:bg-white/[0.05]"
+            >
+              Ver ambiente do cliente
+            </button>
+          </div>
+        </div>
+
+        <div className="rounded-[30px] border border-white/10 bg-white/[0.04] p-6">
+          <div className="text-sm uppercase tracking-[0.22em] text-emerald-300">Pedidos recentes</div>
+          <h2 className="mt-2 text-2xl font-black">Ultimas solicitacoes</h2>
+
+          <div className="mt-5 space-y-3">
+            {recentOrders.length ? (
+              recentOrders.map((order) => (
+                <div
+                  key={order.id}
+                  className="flex flex-col gap-3 rounded-2xl border border-white/10 bg-neutral-900 p-4 sm:flex-row sm:items-center sm:justify-between"
+                >
+                  <div>
+                    <div className="text-sm uppercase tracking-[0.2em] text-emerald-300">
+                      Pedido #{shortOrderId(order.id)}
+                    </div>
+                    <div className="mt-1 text-base font-semibold text-white/90">
+                      {order.restaurantName || 'Restaurante'}
+                    </div>
+                    <div className="text-xs text-white/55">{formatOrderDate(order.createdAt)}</div>
+                  </div>
+                  <div className="text-sm text-white/70">{formatCurrency(order.total)}</div>
+                </div>
+              ))
+            ) : (
+              <div className="rounded-2xl border border-white/10 bg-neutral-900 p-4 text-sm text-white/65">
+                Nenhum pedido recente.
+              </div>
+            )}
+          </div>
+        </div>
       </div>
 
       <div className="mt-8 rounded-[30px] border border-white/10 bg-white/[0.04] p-6">
