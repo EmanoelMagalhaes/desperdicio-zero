@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { STORAGE_KEY, defaultState } from '../data/defaultState';
+import { cmsDefaults } from '../data/cmsDefaults';
 import {
   createClientAccountByAdmin,
   loginWithMode,
@@ -21,8 +22,10 @@ import {
   deleteInventoryItem,
   deleteShoppingItem,
   loadClientData,
+  savePublicCms,
   subscribeClientAccounts,
   subscribeClientData,
+  subscribePublicCms,
   updateClientApprovalStatus,
   toggleChallengeItem,
   toggleShoppingItem,
@@ -43,6 +46,7 @@ import { daysUntil } from '../utils/date';
 import { downloadJson } from '../utils/export';
 import { createId } from '../utils/ids';
 import { getPermissionsForRole } from '../modules/rbac/rbac';
+import { normalizeCms, sanitizeFeaturedOffers } from '../utils/cms';
 
 const AppStoreContext = createContext(null);
 
@@ -67,6 +71,7 @@ function createEmptyOperationalState() {
     challenges: {},
     offers: [],
     orders: [],
+    cmsPublic: cmsDefaults,
   };
 }
 
@@ -100,6 +105,8 @@ export function AppStoreProvider({ children }) {
   const [offersError, setOffersError] = useState('');
   const [ordersStatus, setOrdersStatus] = useState('idle');
   const [ordersError, setOrdersError] = useState('');
+  const [cmsStatus, setCmsStatus] = useState('idle');
+  const [cmsError, setCmsError] = useState('');
   const [cart, setCart] = useState({ restaurantId: '', restaurantName: '', items: [] });
   const [cartWarning, setCartWarning] = useState('');
   const [ready, setReady] = useState(false);
@@ -142,6 +149,7 @@ export function AppStoreProvider({ children }) {
           ...createEmptyOperationalState(),
           offers: prev.offers || [],
           orders: prev.orders || [],
+          cmsPublic: prev.cmsPublic || cmsDefaults,
         }));
         setAdminSelectedClientId('');
         return;
@@ -274,6 +282,31 @@ export function AppStoreProvider({ children }) {
 
   useEffect(() => {
     if (!firebaseMode) {
+      setCmsStatus('ready');
+      setCmsError('');
+      return;
+    }
+
+    setCmsStatus('loading');
+    setCmsError('');
+
+    const unsubscribe = subscribePublicCms(
+      (payload) => {
+        setState((prev) => ({ ...prev, cmsPublic: payload }));
+        setCmsStatus('ready');
+        setCmsError('');
+      },
+      () => {
+        setCmsStatus('error');
+        setCmsError('Nao foi possivel carregar o conteudo publico.');
+      }
+    );
+
+    return unsubscribe;
+  }, [firebaseMode]);
+
+  useEffect(() => {
+    if (!firebaseMode) {
       setOrdersStatus('ready');
       setOrdersError('');
       return;
@@ -358,6 +391,10 @@ export function AppStoreProvider({ children }) {
   );
 
   const offers = useMemo(() => state.offers || [], [state.offers]);
+  const cmsPublic = useMemo(
+    () => normalizeCms(state.cmsPublic || cmsDefaults),
+    [state.cmsPublic]
+  );
   const orders = useMemo(() => state.orders || [], [state.orders]);
   const consumerOrders = useMemo(() => {
     const consumerKey = firebaseMode ? (auth?.currentUser?.uid || session?.id || '') : (session?.id || '');
@@ -458,6 +495,22 @@ export function AppStoreProvider({ children }) {
       };
     },
     [firebaseMode, state]
+  );
+
+  const updatePublicCms = useCallback(
+    async (nextCms) => {
+      const normalized = normalizeCms(nextCms);
+      const filteredFeatured = sanitizeFeaturedOffers(offers, normalized.featuredOffers);
+      const payload = { ...normalized, featuredOffers: filteredFeatured };
+
+      if (firebaseMode) {
+        await savePublicCms(payload);
+      }
+
+      setState((prev) => ({ ...prev, cmsPublic: payload }));
+      return { ok: true };
+    },
+    [firebaseMode, offers]
   );
 
   const clearCart = useCallback(() => {
@@ -1088,6 +1141,9 @@ export function AppStoreProvider({ children }) {
       offers,
       offersStatus,
       offersError,
+      cmsPublic,
+      cmsStatus,
+      cmsError,
       consumerOrders,
       restaurantOrders,
       restaurantOffers,
@@ -1105,6 +1161,7 @@ export function AppStoreProvider({ children }) {
       login,
       register,
       registerConsumer,
+      updatePublicCms,
       requestPasswordReset,
       createClientByAdmin,
       createRestaurantOffer,
@@ -1147,6 +1204,7 @@ export function AppStoreProvider({ children }) {
       login,
       register,
       registerConsumer,
+      updatePublicCms,
       requestPasswordReset,
       createClientByAdmin,
       createRestaurantOffer,
@@ -1167,6 +1225,9 @@ export function AppStoreProvider({ children }) {
       offers,
       offersStatus,
       offersError,
+      cmsPublic,
+      cmsStatus,
+      cmsError,
       consumerOrders,
       restaurantOrders,
       restaurantOffers,

@@ -1,4 +1,5 @@
 import { addDays } from '../utils/date';
+import { cmsDefaults } from './cmsDefaults';
 
 export const STORAGE_KEY = 'desperdicio-zero-v4';
 
@@ -217,4 +218,5 @@ export const defaultState = {
       ],
     },
   },
+  cmsPublic: cmsDefaults,
 };

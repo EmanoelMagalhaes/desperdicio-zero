@@ -43,6 +43,10 @@ function challengesDocRef(clientId) {
   return doc(db, 'clients', clientId, 'meta', 'challenges');
 }
 
+function cmsPublicDocRef() {
+  return doc(db, 'cms', 'public');
+}
+
 function normalizeChallenges(raw) {
   if (!raw) return { ...defaultChallengeState };
 
@@ -258,6 +262,37 @@ export async function updateUserAddress(uid, address) {
     updatedAt: serverTimestamp(),
   });
 
+  return { ok: true };
+}
+
+export function subscribePublicCms(onChange, onError) {
+  assertFirebaseReady();
+
+  return onSnapshot(
+    cmsPublicDocRef(),
+    (snapshot) => {
+      if (!snapshot.exists()) {
+        onChange(null);
+        return;
+      }
+      onChange(snapshot.data() || null);
+    },
+    (error) => {
+      if (onError) onError(error);
+    }
+  );
+}
+
+export async function savePublicCms(payload) {
+  assertFirebaseReady();
+  await setDoc(
+    cmsPublicDocRef(),
+    {
+      ...payload,
+      updatedAt: serverTimestamp(),
+    },
+    { merge: true }
+  );
   return { ok: true };
 }
 
