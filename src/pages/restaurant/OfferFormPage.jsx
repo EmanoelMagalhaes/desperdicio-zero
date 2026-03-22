@@ -12,7 +12,7 @@ function readFileAsDataUrl(file) {
   });
 }
 
-export default function OfferFormPage() {
+export default function OfferFormPage({ returnPath = '/restaurante/ofertas' }) {
   const { id } = useParams();
   const navigate = useNavigate();
   const { restaurantOffers, createRestaurantOffer, updateRestaurantOffer } = useAppStore();
@@ -90,7 +90,7 @@ export default function OfferFormPage() {
       return;
     }
 
-    navigate('/restaurante/ofertas', { replace: true });
+    navigate(returnPath, { replace: true });
   }
 
   return (
@@ -192,7 +192,7 @@ export default function OfferFormPage() {
               {loading ? 'Salvando...' : 'Salvar oferta'}
             </button>
             <Link
-              to="/restaurante/ofertas"
+              to={returnPath}
               className="rounded-2xl border border-white/10 px-4 py-3 text-sm font-semibold text-white/80 transition hover:bg-white/[0.08]"
             >
               Cancelar
