@@ -74,7 +74,7 @@ export default function AdminSummarySection({ state }) {
       <SectionTitle
         eyebrow="Painel administrativo"
         title="Supervisao e operacao dos clientes"
-        text="Acompanhe indicadores gerais e execute operacoes nos ambientes dos clientes em tempo real."
+        text="Acompanhe indicadores globais da plataforma e execute operacoes nos ambientes dos clientes em tempo real."
       />
 
       <div className="mt-8 grid gap-6 lg:grid-cols-[1.05fr_0.95fr]">

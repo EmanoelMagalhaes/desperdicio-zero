@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { CheckCircle2, ShieldPlus, UserPlus, XCircle } from 'lucide-react';
+import { CheckCircle2, ClipboardList, ShieldPlus, Tag, Timer, UserPlus, XCircle } from 'lucide-react';
 import AdminClientToolbar from '../../components/admin/AdminClientToolbar';
 import SectionTitle from '../../components/common/SectionTitle';
 import { useAppStore } from '../../hooks/useAppStore';
@@ -54,6 +54,13 @@ export default function ClientManager() {
         products: state.inventories[client.id]?.length || 0,
         shopping: state.shoppingLists[client.id]?.length || 0,
         critical: (state.inventories[client.id] || []).filter((item) => daysUntil(item.expiry) <= 2).length,
+        orderCount: (state.orders || []).filter((order) => order.restaurantId === client.id).length,
+        pendingOrders: (state.orders || []).filter(
+          (order) => order.restaurantId === client.id && order.status === 'pending'
+        ).length,
+        activeOffers: (state.offers || []).filter(
+          (offer) => offer.restaurantId === client.id && offer.isActive !== false
+        ).length,
       })),
     [state]
   );
@@ -249,30 +256,85 @@ export default function ClientManager() {
         onSelectClient={setAdminSelectedClientId}
       />
 
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-        {clientSummary.map((client) => (
-          <div key={client.id} className="rounded-[28px] border border-white/10 bg-white/[0.04] p-5">
-            <div className="flex items-center justify-between gap-2">
-              <div className="text-lg font-bold">{client.name}</div>
-              <span className={`rounded-full border px-3 py-1 text-xs ${statusBadge(client.approvalStatus)}`}>
-                {statusLabel(client.approvalStatus)}
-              </span>
+      <div className="rounded-[28px] border border-white/10 bg-white/[0.04] p-5">
+        <div className="mb-4 text-sm uppercase tracking-[0.2em] text-emerald-300">Resumo por cliente</div>
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          {clientSummary.map((client) => (
+            <div key={`summary-${client.id}`} className="rounded-2xl border border-white/10 bg-neutral-900 p-4">
+              <div className="flex items-center justify-between gap-2">
+                <div className="text-base font-semibold">{client.name}</div>
+                <span className={`rounded-full border px-3 py-1 text-xs ${statusBadge(client.approvalStatus)}`}>
+                  {statusLabel(client.approvalStatus)}
+                </span>
+              </div>
+              <div className="text-sm text-white/55">{client.businessType}</div>
+
+              <div className="mt-4 grid grid-cols-3 gap-3 text-center text-sm">
+                <div className="rounded-xl bg-white/[0.04] p-2">
+                  <div className="text-xs text-white/50">Pedidos</div>
+                  <div className="font-semibold">{client.orderCount}</div>
+                </div>
+                <div className="rounded-xl bg-white/[0.04] p-2">
+                  <div className="text-xs text-white/50">Pendentes</div>
+                  <div className="font-semibold">{client.pendingOrders}</div>
+                </div>
+                <div className="rounded-xl bg-white/[0.04] p-2">
+                  <div className="text-xs text-white/50">Ofertas</div>
+                  <div className="font-semibold">{client.activeOffers}</div>
+                </div>
+              </div>
+
+              <div className="mt-4 grid gap-2 text-xs text-white/60">
+                <div className="flex items-center gap-2">
+                  <ClipboardList size={14} /> {client.orderCount} pedidos totais
+                </div>
+                <div className="flex items-center gap-2">
+                  <Timer size={14} /> {client.pendingOrders} pedidos pendentes
+                </div>
+                <div className="flex items-center gap-2">
+                  <Tag size={14} /> {client.activeOffers} ofertas ativas
+                </div>
+              </div>
+
+              <Link
+                to="/admin/cliente"
+                onClick={() => setAdminSelectedClientId(client.id)}
+                className="mt-4 inline-flex rounded-2xl bg-emerald-500 px-4 py-2 text-sm font-semibold text-neutral-950"
+              >
+                Acessar ambiente
+              </Link>
             </div>
-            <div className="text-sm text-white/60">{client.businessType}</div>
-            <div className="mt-4 space-y-2 text-sm text-white/75">
-              <div>Produtos: {client.products}</div>
-              <div>Itens criticos: {client.critical}</div>
-              <div>Itens de compra: {client.shopping}</div>
+          ))}
+        </div>
+      </div>
+
+      <div className="rounded-[28px] border border-white/10 bg-white/[0.04] p-5">
+        <div className="mb-4 text-sm uppercase tracking-[0.2em] text-emerald-300">Indicadores operacionais</div>
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          {clientSummary.map((client) => (
+            <div key={`cards-${client.id}`} className="rounded-2xl border border-white/10 bg-neutral-900 p-4">
+              <div className="flex items-center justify-between gap-2">
+                <div className="text-base font-semibold">{client.name}</div>
+                <span className={`rounded-full border px-3 py-1 text-xs ${statusBadge(client.approvalStatus)}`}>
+                  {statusLabel(client.approvalStatus)}
+                </span>
+              </div>
+              <div className="text-sm text-white/55">{client.businessType}</div>
+              <div className="mt-4 space-y-2 text-sm text-white/75">
+                <div>Pedidos: {client.orderCount}</div>
+                <div>Ofertas ativas: {client.activeOffers}</div>
+                <div>Pendentes: {client.pendingOrders}</div>
+              </div>
+              <Link
+                to="/admin/cliente"
+                onClick={() => setAdminSelectedClientId(client.id)}
+                className="mt-4 inline-flex rounded-2xl bg-emerald-500 px-4 py-2 text-sm font-semibold text-neutral-950"
+              >
+                Acessar ambiente
+              </Link>
             </div>
-            <Link
-              to="/admin/cliente"
-              onClick={() => setAdminSelectedClientId(client.id)}
-              className="mt-4 inline-flex rounded-2xl bg-emerald-500 px-4 py-2 text-sm font-semibold text-neutral-950"
-            >
-              Acessar ambiente
-            </Link>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
     </div>
   );
