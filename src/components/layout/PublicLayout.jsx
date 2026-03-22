@@ -13,7 +13,7 @@ const publicNavItems = [
 ];
 
 export default function PublicLayout() {
-  const { session, logout, cart } = useAppStore();
+  const { session, logout, cart, cmsPublic } = useAppStore();
   const navigate = useNavigate();
   const location = useLocation();
   const [showAccountMenu, setShowAccountMenu] = useState(false);
@@ -42,8 +42,8 @@ export default function PublicLayout() {
       <header className="sticky top-0 z-30 border-b border-white/10 bg-neutral-950/90 backdrop-blur">
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-4 md:px-6">
           <Link to="/" className="block">
-            <div className="text-xl font-black tracking-tight sm:text-2xl">Desperdicio Zero</div>
-            <div className="text-xs text-emerald-300 sm:text-sm">Cozinha Inteligente</div>
+            <div className="text-xl font-black tracking-tight sm:text-2xl">{cmsPublic.site.name}</div>
+            <div className="text-xs text-emerald-300 sm:text-sm">{cmsPublic.site.tagline}</div>
           </Link>
 
           <nav className="hidden items-center gap-2 md:flex">

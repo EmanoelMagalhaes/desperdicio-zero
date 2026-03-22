@@ -123,6 +123,11 @@ service cloud.firestore {
       allow delete: if false;
     }
 
+    match /cms/{docId} {
+      allow read: if true;
+      allow write: if isAdmin() && docId == 'public';
+    }
+
     match /{document=**} {
       allow read, write: if false;
     }

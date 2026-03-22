@@ -13,6 +13,7 @@ import ForgotPasswordPage from './pages/auth/ForgotPasswordPage';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import AdminLoginPage from './pages/admin/AdminLoginPage';
 import AdminCmsPage from './pages/admin/AdminCmsPage';
+import AdminPublicCmsPage from './pages/admin/AdminPublicCmsPage';
 import ClientManager from './pages/admin/ClientManager';
 import ClientView from './pages/admin/ClientView';
 import DashboardPage from './pages/client/DashboardPage';
@@ -95,6 +96,7 @@ export default function App() {
           <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />
           <Route path="/admin/dashboard" element={<AdminDashboard />} />
           <Route path="/admin/cms" element={<AdminCmsPage />} />
+          <Route path="/admin/cms-publico" element={<AdminPublicCmsPage />} />
           <Route path="/admin/cms/ofertas/nova" element={<OfferFormPage returnPath="/admin/cms" />} />
           <Route path="/admin/cms/ofertas/:id/editar" element={<OfferFormPage returnPath="/admin/cms" />} />
           <Route path="/admin/clientes" element={<ClientManager />} />
