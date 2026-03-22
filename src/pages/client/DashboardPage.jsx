@@ -3,7 +3,7 @@ import DashboardSection from '../../components/sections/DashboardSection';
 import { useAppStore } from '../../hooks/useAppStore';
 
 export default function DashboardPage() {
-  const { inventory, shoppingList, session, updateAccountAddress } = useAppStore();
+  const { inventory, shoppingList, session, updateAccountAddress, restaurantOrders, restaurantOffers } = useAppStore();
   const navigate = useNavigate();
 
   return (
@@ -14,6 +14,9 @@ export default function DashboardPage() {
       address={session?.address || ''}
       onSaveAddress={updateAccountAddress}
       onGoTo={navigate}
+      restaurantOrders={restaurantOrders}
+      restaurantOffers={restaurantOffers}
+      showOperational
     />
   );
 }
