@@ -1,5 +1,6 @@
-import { Home, Package, ShoppingCart, ChefHat, Lightbulb, Tag } from 'lucide-react';
-import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom';
+import { ChefHat, ClipboardList, Home, Lightbulb, LogOut, Package, ShoppingCart, Tag, UserCircle } from 'lucide-react';
+import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { useEffect, useMemo, useState } from 'react';
 import { useAppStore } from '../../hooks/useAppStore';
 
 const publicNavItems = [
@@ -12,8 +13,15 @@ const publicNavItems = [
 ];
 
 export default function PublicLayout() {
-  const { session } = useAppStore();
+  const { session, logout, cart } = useAppStore();
   const navigate = useNavigate();
+  const location = useLocation();
+  const [showAccountMenu, setShowAccountMenu] = useState(false);
+  const cartCount = useMemo(() => cart?.items?.length || 0, [cart]);
+
+  useEffect(() => {
+    setShowAccountMenu(false);
+  }, [location.pathname]);
 
   function goToPanel() {
     if (session?.role === 'admin') {
@@ -61,7 +69,56 @@ export default function PublicLayout() {
           </nav>
 
           <div className="flex items-center gap-2 sm:gap-3">
-            {session ? (
+            {session?.role === 'consumer' ? (
+              <>
+                <Link
+                  to="/pedido"
+                  className="relative inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.03] text-white/85 transition hover:bg-white/[0.08]"
+                  aria-label="Carrinho"
+                  title="Carrinho"
+                >
+                  <ShoppingCart size={18} />
+                  {cartCount > 0 ? (
+                    <span className="absolute -right-1 -top-1 flex h-5 min-w-[1.25rem] items-center justify-center rounded-full bg-emerald-500 px-1 text-[11px] font-semibold text-neutral-950">
+                      {cartCount}
+                    </span>
+                  ) : null}
+                </Link>
+
+                <div className="relative">
+                  <button
+                    onClick={() => setShowAccountMenu((prev) => !prev)}
+                    className="inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.03] text-white/85 transition hover:bg-white/[0.08]"
+                    aria-label="Conta do consumidor"
+                    title="Conta"
+                  >
+                    <UserCircle size={18} />
+                  </button>
+
+                  {showAccountMenu ? (
+                    <div className="absolute right-0 mt-3 w-52 rounded-2xl border border-white/10 bg-neutral-950/95 p-2 shadow-2xl shadow-black/40 backdrop-blur">
+                      <Link
+                        to="/meus-pedidos"
+                        className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-sm text-white/80 transition hover:bg-white/[0.08] hover:text-white"
+                      >
+                        <ClipboardList size={16} />
+                        Meus pedidos
+                      </Link>
+                      <button
+                        onClick={async () => {
+                          await logout();
+                          navigate('/', { replace: true });
+                        }}
+                        className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-sm text-white/80 transition hover:bg-white/[0.08] hover:text-white"
+                      >
+                        <LogOut size={16} />
+                        Sair da conta
+                      </button>
+                    </div>
+                  ) : null}
+                </div>
+              </>
+            ) : session ? (
               <button
                 onClick={goToPanel}
                 className="rounded-2xl bg-emerald-500 px-4 py-2 text-sm font-semibold text-neutral-950 transition hover:scale-[1.02] sm:text-base"
