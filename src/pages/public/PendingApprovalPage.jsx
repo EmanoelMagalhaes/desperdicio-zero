@@ -81,7 +81,7 @@ export default function PendingApprovalPage() {
                 2. O administrador revisa e aprova seu cadastro.
               </div>
               <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
-                3. Com a aprovacao, seu login de cliente e liberado.
+                3. Com a aprovacao, seu login de estabelecimento parceiro e liberado.
               </div>
             </div>
           </div>

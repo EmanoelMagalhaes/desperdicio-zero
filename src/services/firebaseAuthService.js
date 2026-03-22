@@ -91,7 +91,7 @@ function approvalError(status) {
     return 'Seu cadastro foi reprovado. Entre em contato com o administrador.';
   }
 
-  return 'Sua conta de cliente ainda nao foi aprovada.';
+  return 'Sua conta de estabelecimento parceiro ainda nao foi aprovada.';
 }
 
 async function getProfile(uid) {
@@ -171,7 +171,12 @@ export async function loginWithFirebase(mode, email, password) {
       return { ok: false, error: 'Esta conta nao possui acesso de consumidor.' };
     }
 
-    if (mode === 'client') {
+    if (mode === 'public' && normalizedRole === 'admin') {
+      await signOut(auth);
+      return { ok: false, error: 'Acesso administrativo deve usar /admin/login.' };
+    }
+
+    if (normalizedRole === 'client') {
       await reload(credential.user);
 
       if (!credential.user.emailVerified) {
@@ -196,7 +201,7 @@ export async function loginWithFirebase(mode, email, password) {
       }
     }
 
-    if (mode === 'consumer') {
+    if (normalizedRole === 'consumer') {
       await reload(credential.user);
 
       if (!credential.user.emailVerified) {

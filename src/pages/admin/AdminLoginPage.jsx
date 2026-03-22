@@ -1,11 +1,10 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { BarChart3, Lock, ShieldCheck } from 'lucide-react';
 import MetricCard from '../../components/common/MetricCard';
-import { BarChart3, CheckCircle2, Lock } from 'lucide-react';
 import { useAppStore } from '../../hooks/useAppStore';
-import { getDefaultRouteForRole } from '../../modules/rbac/rbac';
 
-export default function LoginPage() {
+export default function AdminLoginPage() {
   const [form, setForm] = useState({ email: '', password: '' });
   const [feedback, setFeedback] = useState({ type: '', text: '' });
   const [loading, setLoading] = useState(false);
@@ -17,7 +16,7 @@ export default function LoginPage() {
     setLoading(true);
     setFeedback({ type: '', text: '' });
 
-    const result = await login('public', form.email, form.password);
+    const result = await login('admin', form.email, form.password);
     setLoading(false);
 
     if (!result.ok) {
@@ -25,10 +24,10 @@ export default function LoginPage() {
       return;
     }
 
-    setFeedback({ type: 'success', text: 'Acesso liberado. Redirecionando...' });
+    setFeedback({ type: 'success', text: 'Acesso administrativo liberado. Redirecionando...' });
 
     setTimeout(() => {
-      navigate(getDefaultRouteForRole(result.account?.role), { replace: true });
+      navigate('/admin/dashboard', { replace: true });
     }, 350);
   }
 
@@ -36,14 +35,14 @@ export default function LoginPage() {
     <div className="relative overflow-hidden rounded-[36px] border border-white/10 bg-white/[0.03] p-8 md:p-10">
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(16,185,129,0.24),transparent_30%),radial-gradient(circle_at_bottom_left,rgba(245,158,11,0.18),transparent_28%)]" />
 
-      <div className="relative grid gap-10 lg:grid-cols-[1.08fr_0.92fr] lg:items-center">
+      <div className="relative grid gap-10 lg:grid-cols-[1.05fr_0.95fr] lg:items-center">
         <div>
           <div className="inline-flex rounded-full border border-emerald-400/20 bg-emerald-400/10 px-4 py-2 text-sm text-emerald-300">
-            Plataforma profissional para consumidores e estabelecimentos parceiros
+            Acesso administrativo reservado
           </div>
 
           <h1 className="mt-6 max-w-3xl text-4xl font-black leading-tight md:text-6xl">
-            Entre no <span className="text-emerald-400">Desperdicio Zero</span> e gerencie sua operacao.
+            Painel <span className="text-emerald-400">Administrador</span>
           </h1>
 
           <p className="mt-6 max-w-2xl text-lg leading-8 text-white/72">
@@ -51,39 +50,16 @@ export default function LoginPage() {
           </p>
 
           <div className="mt-10 grid gap-4 sm:grid-cols-3">
-            <MetricCard label="Modulos" value="6 telas" icon={BarChart3} tone="emerald" />
-            <MetricCard label="Acesso" value="Consumidor + Parceiro" icon={Lock} tone="blue" />
-            <MetricCard
-              label="Persistencia"
-              value={backendMode === 'firebase' ? 'Firebase' : 'LocalStorage'}
-              icon={CheckCircle2}
-              tone="amber"
-            />
-          </div>
-
-          <div className="mt-10 rounded-[28px] border border-white/10 bg-white/[0.04] p-6">
-            <div className="text-lg font-bold">Perfis principais</div>
-            <div className="mt-4 grid gap-4 md:grid-cols-2">
-              <div className="rounded-2xl border border-white/10 bg-neutral-900 p-4">
-                <div className="mb-2 text-sm font-semibold text-emerald-300">Consumidor final</div>
-                <div className="text-sm text-white/70">Acompanhe ofertas e pedidos dos restaurantes parceiros.</div>
-              </div>
-              <div className="rounded-2xl border border-white/10 bg-neutral-900 p-4">
-                <div className="mb-2 text-sm font-semibold text-emerald-300">Estabelecimento parceiro</div>
-                <div className="text-sm text-white/70">
-                  Gerencie sua operacao e receba pedidos com controle completo.
-                </div>
-              </div>
-            </div>
+            <MetricCard label="Supervisao" value="Global" icon={ShieldCheck} tone="emerald" />
+            <MetricCard label="Acesso" value="Admin" icon={Lock} tone="blue" />
+            <MetricCard label="Indicadores" value="Operacao" icon={BarChart3} tone="amber" />
           </div>
         </div>
 
         <div className="rounded-[32px] border border-white/10 bg-neutral-900/90 p-6 shadow-2xl shadow-black/30 backdrop-blur md:p-8">
           <div className="mb-6">
-            <div className="text-2xl font-black">Entrar na plataforma</div>
-            <p className="mt-2 text-white/62">
-              Consumidor final ou parceiro operacional: entre com e-mail e senha para continuar.
-            </p>
+            <div className="text-2xl font-black">Login administrativo</div>
+            <p className="mt-2 text-white/62">Use um usuario com role admin para acessar a supervisao.</p>
           </div>
 
           <div className="space-y-4">
@@ -122,14 +98,8 @@ export default function LoginPage() {
           ) : null}
 
           <div className="mt-5 flex flex-col gap-2 text-sm">
-            <Link to="/forgot-password" className="text-white/70 hover:text-white">
-              Esqueci minha senha
-            </Link>
-            <Link to="/register" className="text-emerald-300 hover:text-emerald-200">
-              Criar nova conta
-            </Link>
-            <Link to="/admin/login" className="text-white/60 hover:text-white/80">
-              Acesso administrativo
+            <Link to="/login" className="text-emerald-300 hover:text-emerald-200">
+              Voltar para login publico
             </Link>
           </div>
         </div>

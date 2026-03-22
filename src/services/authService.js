@@ -23,6 +23,35 @@ function resolveAccountsByMode(state, mode) {
 }
 
 export function loginWithMode(state, mode, email, password) {
+  if (mode === 'public') {
+    const consumerSource = state.consumerAccounts || [];
+    const consumerAccount = consumerSource.find((item) => item.email === email && item.password === password);
+    if (consumerAccount) {
+      return { ok: true, account: consumerAccount };
+    }
+
+    const clientAccount = state.clientAccounts.find((item) => item.email === email && item.password === password);
+    if (!clientAccount) {
+      return { ok: false, error: 'Nao encontramos esse acesso. Confira e-mail e senha.' };
+    }
+
+    if (!isApprovedClient(clientAccount)) {
+      const status = clientAccount.approvalStatus || 'pending';
+
+      if (status === 'pending') {
+        return { ok: false, error: 'Seu cadastro esta pendente de aprovacao do administrador.' };
+      }
+
+      if (status === 'rejected') {
+        return { ok: false, error: 'Seu cadastro foi reprovado. Entre em contato com o administrador.' };
+      }
+
+      return { ok: false, error: 'Sua conta de cliente ainda nao foi aprovada.' };
+    }
+
+    return { ok: true, account: clientAccount };
+  }
+
   const source = resolveAccountsByMode(state, mode);
   const account = source.find((item) => item.email === email && item.password === password);
 
@@ -41,7 +70,7 @@ export function loginWithMode(state, mode, email, password) {
       return { ok: false, error: 'Seu cadastro foi reprovado. Entre em contato com o administrador.' };
     }
 
-    return { ok: false, error: 'Sua conta de cliente ainda nao foi aprovada.' };
+    return { ok: false, error: 'Sua conta de estabelecimento parceiro ainda nao foi aprovada.' };
   }
 
   return { ok: true, account };

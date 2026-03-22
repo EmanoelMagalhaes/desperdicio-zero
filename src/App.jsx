@@ -11,6 +11,7 @@ import LoginPage from './pages/auth/LoginPage';
 import RegisterPage from './pages/auth/RegisterPage';
 import ForgotPasswordPage from './pages/auth/ForgotPasswordPage';
 import AdminDashboard from './pages/admin/AdminDashboard';
+import AdminLoginPage from './pages/admin/AdminLoginPage';
 import ClientManager from './pages/admin/ClientManager';
 import ClientView from './pages/admin/ClientView';
 import DashboardPage from './pages/client/DashboardPage';
@@ -27,8 +28,6 @@ import PendingApprovalPage from './pages/public/PendingApprovalPage';
 import OffersPage from './pages/consumer/OffersPage';
 import OfferDetailsPage from './pages/consumer/OfferDetailsPage';
 import MyOrdersPage from './pages/consumer/MyOrdersPage';
-import ConsumerLoginPage from './pages/consumer/ConsumerLoginPage';
-import ConsumerRegisterPage from './pages/consumer/ConsumerRegisterPage';
 import CheckoutPage from './pages/consumer/CheckoutPage';
 import OrderSuccessPage from './pages/consumer/OrderSuccessPage';
 import OffersListPage from './pages/restaurant/OffersListPage';
@@ -69,8 +68,9 @@ export default function App() {
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
           <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-          <Route path="/consumer/login" element={<ConsumerLoginPage />} />
-          <Route path="/consumer/register" element={<ConsumerRegisterPage />} />
+          <Route path="/admin/login" element={<AdminLoginPage />} />
+          <Route path="/consumer/login" element={<Navigate to="/login" replace />} />
+          <Route path="/consumer/register" element={<Navigate to="/register" replace />} />
         </Route>
       </Route>
 
