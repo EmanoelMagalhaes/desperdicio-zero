@@ -52,12 +52,12 @@ export default function LandingPage() {
               <Link to="/register" className="rounded-2xl bg-emerald-500 px-6 py-3 font-semibold text-neutral-950">
                 {ctaPrimary}
               </Link>
-              <a
-                href="#planos"
+              <Link
+                to="/planos"
                 className="rounded-2xl border border-white/10 px-6 py-3 font-semibold text-white/85 transition hover:bg-white/[0.05]"
               >
                 {ctaSecondary}
-              </a>
+              </Link>
             </div>
             <div className="mt-6 flex flex-wrap gap-2 text-sm text-white/55">
               <span className="rounded-full border border-white/10 px-3 py-1">Familias</span>
@@ -286,12 +286,12 @@ export default function LandingPage() {
             <div className="text-sm uppercase tracking-[0.22em] text-emerald-300">Planos</div>
             <h2 className="mt-2 text-2xl font-black">Planos claros para cada perfil</h2>
           </div>
-          <a
-            href="#"
+          <Link
+            to="/planos"
             className="rounded-2xl border border-white/10 px-4 py-2 text-sm font-semibold text-white/80 transition hover:bg-white/[0.08]"
           >
             Ver detalhes
-          </a>
+          </Link>
         </div>
         <div className="mt-6 grid gap-4 md:grid-cols-3">
           {[

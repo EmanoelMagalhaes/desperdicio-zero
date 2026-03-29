@@ -6,6 +6,7 @@ import { useAppStore } from '../../hooks/useAppStore';
 const publicNavItems = [
   { to: '/', label: 'Home', icon: Home },
   { to: '/ofertas', label: 'Ofertas', icon: Tag },
+  { to: '/planos', label: 'Planos', icon: ClipboardList },
   { to: '/demo/kitchen', label: 'Estoque', icon: Package },
   { to: '/demo/shopping', label: 'Compras', icon: ShoppingCart },
   { to: '/demo/recipes', label: 'Receitas', icon: ChefHat },
