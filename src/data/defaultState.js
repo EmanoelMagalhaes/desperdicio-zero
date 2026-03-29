@@ -121,6 +121,36 @@ export const defaultState = {
       ],
     },
   ],
+  ads: [
+    {
+      id: 'ad-demo-1',
+      advertiserId: 'anunciante-demo',
+      advertiserName: 'Eco Partner',
+      title: 'Conteudo patrocinado',
+      description: 'Destaque especial para parceiros com solucao sustentavel e alcance local.',
+      ctaLabel: 'Conhecer parceiro',
+      ctaUrl: 'https://example.com',
+      imageUrl: '',
+      status: 'approved',
+      isActive: true,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    },
+    {
+      id: 'ad-demo-2',
+      advertiserId: 'anunciante-demo',
+      advertiserName: 'Eco Partner',
+      title: 'Campanha em aprovacao',
+      description: 'Solicitacao aguardando aprovacao do admin.',
+      ctaLabel: 'Saiba mais',
+      ctaUrl: 'https://example.com',
+      imageUrl: '',
+      status: 'pending',
+      isActive: false,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    },
+  ],
   inventories: {
     'cliente-demo': [
       {
