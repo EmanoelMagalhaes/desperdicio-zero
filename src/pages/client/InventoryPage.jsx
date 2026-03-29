@@ -16,7 +16,7 @@ export default function InventoryPage() {
           </Link>
         </div>
       ) : null}
-      <InventorySection items={inventory} onAdd={addInventory} onDelete={deleteInventory} />
+      <InventorySection items={inventory} onAdd={addInventory} onDelete={deleteInventory} limitReached={limitReached} />
     </div>
   );
 }
