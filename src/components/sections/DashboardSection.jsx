@@ -65,7 +65,7 @@ export default function DashboardSection({
   showOperational = false,
 }) {
   const criticalItems = inventory.filter((item) => daysUntil(item.expiry) <= 2);
-  const recipes = recipeSuggestions(inventory);
+  const recipes = recipeSuggestions(inventory, { profile: showOperational ? 'restaurant' : 'family', limit: 3 });
   const checkedCount = shoppingList.filter((item) => item.checked).length;
   const [addressValue, setAddressValue] = useState(address || '');
   const [saving, setSaving] = useState(false);

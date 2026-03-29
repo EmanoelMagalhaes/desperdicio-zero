@@ -20,7 +20,7 @@ import { resolveFeaturedOffers } from '../../utils/cms';
 
 export default function LandingPage() {
   const { demoInventory, demoShoppingList, offers, cmsPublic } = useAppStore();
-  const demoRecipes = recipeSuggestions(demoInventory);
+  const demoRecipes = recipeSuggestions(demoInventory, { profile: 'restaurant', limit: 4 });
   const criticalCount = demoInventory.filter((item) => daysUntil(item.expiry) <= 2).length;
   const activeOffers = (offers || []).filter((offer) => offer?.isActive !== false);
   const featuredOffers = resolveFeaturedOffers(offers || [], cmsPublic.featuredOffers, 4);
