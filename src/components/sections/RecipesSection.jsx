@@ -2,15 +2,27 @@ import { motion } from 'framer-motion';
 import SectionTitle from '../common/SectionTitle';
 import { recipeSuggestions } from '../../services/kitchenService';
 
-export default function RecipesSection({ items }) {
-  const suggestions = recipeSuggestions(items);
+function levelLabel(level) {
+  if (level === 'complete') return 'Receita completa';
+  if (level === 'almost') return 'Quase completa';
+  return 'Sugestao';
+}
+
+function profileLabel(profile) {
+  if (profile === 'family') return 'Familia';
+  if (profile === 'restaurant') return 'Restaurante';
+  return 'Para todos';
+}
+
+export default function RecipesSection({ items, profile }) {
+  const suggestions = recipeSuggestions(items, { profile, limit: 5 });
 
   return (
     <div>
       <SectionTitle
-        eyebrow="Receitas sugeridas"
-        title="Transforme estoque em acao pratica"
-        text="As sugestoes usam os itens disponiveis e a urgencia operacional para reduzir perdas."
+        eyebrow="Receitas inteligentes"
+        title="Use o estoque para criar opcoes certeiras"
+        text="Sugestoes baseadas nos itens disponiveis, prioridade por validade e combinacoes mais provaveis."
       />
 
       <div className="grid gap-6 lg:grid-cols-2">
@@ -22,13 +34,38 @@ export default function RecipesSection({ items }) {
             transition={{ delay: index * 0.05 }}
             className="rounded-[30px] border border-white/10 bg-white/[0.04] p-6"
           >
-            <div className="mb-4 inline-flex rounded-full bg-emerald-500/12 px-3 py-1 text-xs font-semibold text-emerald-300">
-              Prioridade {recipe.priority}
+            <div className="flex flex-wrap items-center gap-2">
+              <div className="inline-flex rounded-full bg-emerald-500/12 px-3 py-1 text-xs font-semibold text-emerald-300">
+                {levelLabel(recipe.level)}
+              </div>
+              <div className="inline-flex rounded-full bg-white/10 px-3 py-1 text-xs text-white/70">
+                {profileLabel(recipe.profile)}
+              </div>
+              <div className="inline-flex rounded-full bg-white/5 px-3 py-1 text-xs text-white/60">
+                Prioridade {recipe.priority}
+              </div>
             </div>
-            <h3 className="text-2xl font-black">{recipe.title}</h3>
-            <p className="mt-4 leading-8 text-white/70">{recipe.description}</p>
-            <div className="mt-6 rounded-2xl border border-white/10 bg-neutral-900 p-4 text-sm text-white/65">
-              Estrategia: priorizar itens criticos, montar oferta do dia e medir saida apos a execucao.
+            <h3 className="mt-4 text-2xl font-black">{recipe.title}</h3>
+            <p className="mt-3 leading-8 text-white/70">{recipe.description}</p>
+
+            <div className="mt-4 flex flex-wrap items-center gap-2 text-xs text-white/70">
+              <span className="rounded-full border border-white/10 bg-neutral-900 px-3 py-1">{recipe.matchLabel}</span>
+              {recipe.reasonLabel ? (
+                <span className="rounded-full border border-white/10 bg-neutral-900 px-3 py-1">
+                  {recipe.reasonLabel}
+                </span>
+              ) : null}
+            </div>
+
+            <div className="mt-5 text-sm text-white/65">
+              Ingredientes principais:{' '}
+              <span className="text-white/85">
+                {(recipe.ingredientsRequired || []).map((item) => item.name).join(', ') || 'Sem dados'}
+              </span>
+            </div>
+
+            <div className="mt-5 rounded-2xl border border-white/10 bg-neutral-900 p-4 text-sm text-white/65">
+              Dica: priorize itens criticos e use combinacoes com maior match para reduzir perdas.
             </div>
           </motion.div>
         ))}
