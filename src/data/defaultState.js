@@ -121,6 +121,7 @@ export const defaultState = {
       ],
     },
   ],
+  subscriptions: [],
   ads: [
     {
       id: 'ad-demo-1',

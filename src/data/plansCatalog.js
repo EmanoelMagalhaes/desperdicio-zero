@@ -1,0 +1,126 @@
+const CHECKOUT_URLS = {
+  'familia-plus': import.meta.env.VITE_MP_CHECKOUT_FAMILIA_PLUS || '',
+  'gestao-plus': import.meta.env.VITE_MP_CHECKOUT_GESTAO_PLUS || '',
+  'marketplace-flex': import.meta.env.VITE_MP_CHECKOUT_MARKETPLACE_FLEX || '',
+  'marketplace-pro': import.meta.env.VITE_MP_CHECKOUT_MARKETPLACE_PRO || '',
+  'anuncio-standard': import.meta.env.VITE_MP_CHECKOUT_ANUNCIO_STANDARD || '',
+};
+
+export const PLAN_TABS = [
+  { id: 'familia', label: 'Familia' },
+  { id: 'restaurante', label: 'Restaurante' },
+  { id: 'anuncio', label: 'Anuncios' },
+];
+
+export const PLAN_DATA = {
+  familia: [
+    {
+      id: 'familia-essencial',
+      profile: 'family',
+      name: 'Familia Essencial',
+      priceLabel: 'Gratis',
+      priceValue: 0,
+      billingPeriod: 'mensal',
+      badge: 'Comece sem custo',
+      limit: 'Ate 50 produtos',
+      highlights: ['Despensa inteligente', 'Alertas simples', 'Base para receitas futuras'],
+      cta: 'Criar conta gratuita',
+      featured: false,
+      checkoutUrl: '',
+    },
+    {
+      id: 'familia-plus',
+      profile: 'family',
+      name: 'Familia Plus',
+      priceLabel: 'R$ 24,99/mes',
+      priceValue: 24.99,
+      billingPeriod: 'mensal',
+      badge: 'Ilimitado',
+      limit: 'Produtos ilimitados',
+      highlights: ['Alertas avancados', 'Receitas inteligentes (em breve)', 'Historico completo'],
+      cta: 'Desbloquear ilimitado',
+      featured: true,
+      checkoutUrl: CHECKOUT_URLS['familia-plus'],
+    },
+  ],
+  restaurante: [
+    {
+      id: 'gestao-start',
+      profile: 'restaurant',
+      name: 'Gestao Start',
+      priceLabel: 'Gratis',
+      priceValue: 0,
+      billingPeriod: 'mensal',
+      badge: 'Entrada',
+      limit: 'Ate 50 produtos',
+      highlights: ['Controle basico de estoque', 'Alertas simples', 'Sem publicacao de ofertas'],
+      cta: 'Comecar gratis',
+      featured: false,
+      checkoutUrl: '',
+    },
+    {
+      id: 'gestao-plus',
+      profile: 'restaurant',
+      name: 'Gestao Plus',
+      priceLabel: 'R$ 24,99/mes',
+      priceValue: 24.99,
+      billingPeriod: 'mensal',
+      badge: 'Gestao completa',
+      limit: 'Produtos ilimitados',
+      highlights: ['Alertas avancados', 'Prioridades operacionais', 'Sem marketplace'],
+      cta: 'Desbloquear ilimitado',
+      featured: false,
+      checkoutUrl: CHECKOUT_URLS['gestao-plus'],
+    },
+    {
+      id: 'marketplace-flex',
+      profile: 'restaurant',
+      name: 'Marketplace Flex',
+      priceLabel: 'R$ 49,99/mes + 10%',
+      priceValue: 49.99,
+      billingPeriod: 'mensal',
+      badge: 'Vitrine',
+      limit: 'Produtos ilimitados',
+      highlights: ['Publicacao de ofertas', 'Comissao padrao', 'Ideal para testar vendas'],
+      cta: 'Ativar Marketplace Flex',
+      featured: true,
+      checkoutUrl: CHECKOUT_URLS['marketplace-flex'],
+    },
+    {
+      id: 'marketplace-pro',
+      profile: 'restaurant',
+      name: 'Marketplace Pro',
+      priceLabel: 'R$ 98,99/mes + 5%',
+      priceValue: 98.99,
+      billingPeriod: 'mensal',
+      badge: 'Escala',
+      limit: 'Produtos ilimitados',
+      highlights: ['Comissao reduzida', 'Prioridade futura', 'Ideal para alto volume'],
+      cta: 'Ativar Marketplace Pro',
+      featured: false,
+      checkoutUrl: CHECKOUT_URLS['marketplace-pro'],
+    },
+  ],
+  anuncio: [
+    {
+      id: 'anuncio-standard',
+      profile: 'partner',
+      name: 'Anuncio Standard',
+      priceLabel: 'R$ 149,99/mes',
+      priceValue: 149.99,
+      billingPeriod: 'mensal',
+      badge: 'Visibilidade',
+      limit: '1 espaco ativo',
+      highlights: ['Banner mensal aprovado', 'Destaque na home', 'Segmentacao futura'],
+      cta: 'Anunciar na plataforma',
+      featured: true,
+      checkoutUrl: CHECKOUT_URLS['anuncio-standard'],
+    },
+  ],
+};
+
+export function findPlanById(planId) {
+  if (!planId) return null;
+  const entries = Object.values(PLAN_DATA).flat();
+  return entries.find((plan) => plan.id === planId) || null;
+}

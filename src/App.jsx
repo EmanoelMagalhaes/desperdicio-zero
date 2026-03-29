@@ -28,6 +28,8 @@ import DemoShopping from './pages/public/DemoShopping';
 import DemoTips from './pages/public/DemoTips';
 import LandingPage from './pages/public/LandingPage';
 import PlansPage from './pages/public/PlansPage';
+import PlanCheckoutPage from './pages/public/PlanCheckoutPage';
+import SubscriptionStatusPage from './pages/public/SubscriptionStatusPage';
 import PendingApprovalPage from './pages/public/PendingApprovalPage';
 import OffersPage from './pages/consumer/OffersPage';
 import OfferDetailsPage from './pages/consumer/OfferDetailsPage';
@@ -50,6 +52,7 @@ export default function App() {
       <Route element={<PublicLayout />}>
         <Route index element={<LandingPage />} />
         <Route path="/planos" element={<PlansPage />} />
+        <Route path="/assinatura/:status" element={<SubscriptionStatusPage />} />
         <Route path="/ofertas" element={<OffersPage />} />
         <Route path="/ofertas/:id" element={<OfferDetailsPage />} />
         <Route path="/pedido" element={<CheckoutPage />} />
@@ -91,6 +94,12 @@ export default function App() {
           <Route path="/restaurante/ofertas/nova" element={<OfferFormPage />} />
           <Route path="/restaurante/ofertas/:id/editar" element={<OfferFormPage />} />
           <Route path="/restaurante/pedidos" element={<RestaurantOrdersPage />} />
+        </Route>
+      </Route>
+
+      <Route element={<ProtectedRoute allowRoles={['consumer', 'client', 'restaurant', 'admin']} />}>
+        <Route element={<PublicLayout />}>
+          <Route path="/planos/checkout/:planId" element={<PlanCheckoutPage />} />
         </Route>
       </Route>
 
