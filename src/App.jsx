@@ -26,6 +26,7 @@ import DemoRecipes from './pages/public/DemoRecipes';
 import DemoShopping from './pages/public/DemoShopping';
 import DemoTips from './pages/public/DemoTips';
 import LandingPage from './pages/public/LandingPage';
+import PlansPage from './pages/public/PlansPage';
 import PendingApprovalPage from './pages/public/PendingApprovalPage';
 import OffersPage from './pages/consumer/OffersPage';
 import OfferDetailsPage from './pages/consumer/OfferDetailsPage';
@@ -47,6 +48,7 @@ export default function App() {
     <Routes>
       <Route element={<PublicLayout />}>
         <Route index element={<LandingPage />} />
+        <Route path="/planos" element={<PlansPage />} />
         <Route path="/ofertas" element={<OffersPage />} />
         <Route path="/ofertas/:id" element={<OfferDetailsPage />} />
         <Route path="/pedido" element={<CheckoutPage />} />
