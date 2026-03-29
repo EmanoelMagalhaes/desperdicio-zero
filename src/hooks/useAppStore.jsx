@@ -36,6 +36,7 @@ import { auth } from '../services/firebaseClient';
 import { loadState, persistState } from '../services/storageService';
 import { createOffer, deleteOffer, subscribeOffers, updateOffer } from '../services/offersService';
 import { subscribeAds, updateAd } from '../services/adsService';
+import { createSubscription as createSubscriptionRemote } from '../services/paymentsService';
 import {
   createOrder as createOrderRemote,
   subscribeAllOrders,
@@ -72,6 +73,7 @@ function createEmptyOperationalState() {
     challenges: {},
     offers: [],
     orders: [],
+    subscriptions: [],
     cmsPublic: cmsDefaults,
     ads: [],
   };
@@ -153,6 +155,7 @@ export function AppStoreProvider({ children }) {
           ...createEmptyOperationalState(),
           offers: prev.offers || [],
           orders: prev.orders || [],
+          subscriptions: prev.subscriptions || [],
           cmsPublic: prev.cmsPublic || cmsDefaults,
           ads: prev.ads || [],
         }));
@@ -418,6 +421,7 @@ export function AppStoreProvider({ children }) {
 
   const offers = useMemo(() => state.offers || [], [state.offers]);
   const ads = useMemo(() => state.ads || [], [state.ads]);
+  const subscriptions = useMemo(() => state.subscriptions || [], [state.subscriptions]);
   const cmsPublic = useMemo(
     () => normalizeCms(state.cmsPublic || cmsDefaults),
     [state.cmsPublic]
@@ -908,6 +912,53 @@ export function AppStoreProvider({ children }) {
     },
     [firebaseMode, orders]
   );
+
+  const startPlanSubscription = useCallback(
+    async (plan) => {
+      if (!plan?.id) return { ok: false, error: 'Plano invalido.' };
+      if (!session?.id) return { ok: false, error: 'Sessao invalida.' };
+
+      const userId = firebaseMode ? auth?.currentUser?.uid : session.id;
+      if (!userId) return { ok: false, error: 'Sessao invalida. Recarregue e tente novamente.' };
+
+      const basePayload = {
+        planId: plan.id,
+        planName: plan.name,
+        price: Number(plan.priceValue || 0),
+        currency: 'BRL',
+        billingPeriod: plan.billingPeriod || 'mensal',
+        userId,
+        userEmail: session.email || '',
+        userRole: session.role || 'consumer',
+        provider: 'mercadopago',
+        status: 'pending',
+      };
+
+      try {
+        if (firebaseMode) {
+          const created = await createSubscriptionRemote(basePayload);
+          return { ok: true, subscription: created, checkoutUrl: plan.checkoutUrl || '' };
+        }
+
+        const created = {
+          ...basePayload,
+          id: createId('sub'),
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        };
+
+        setState((prev) => ({
+          ...prev,
+          subscriptions: [...(prev.subscriptions || []), created],
+        }));
+
+        return { ok: true, subscription: created, checkoutUrl: plan.checkoutUrl || '' };
+      } catch (error) {
+        return { ok: false, error: error?.message || 'Nao foi possivel iniciar a assinatura.' };
+      }
+    },
+    [session, firebaseMode]
+  );
   const requestPasswordReset = useCallback(
     async (email) => {
       if (!email) {
@@ -1233,6 +1284,7 @@ export function AppStoreProvider({ children }) {
       restaurantOrders,
       restaurantOffers,
       approvedAds,
+      subscriptions,
       cart,
       cartTotal,
       cartWarning,
@@ -1254,6 +1306,7 @@ export function AppStoreProvider({ children }) {
       updateRestaurantOffer,
       deleteRestaurantOffer,
       updateAdStatus,
+      startPlanSubscription,
       updateOrderStatus,
       addToCart,
       replaceCartWithOffer,
@@ -1298,6 +1351,7 @@ export function AppStoreProvider({ children }) {
       updateRestaurantOffer,
       deleteRestaurantOffer,
       updateAdStatus,
+      startPlanSubscription,
       updateOrderStatus,
       setClientApproval,
       logout,
@@ -1323,6 +1377,7 @@ export function AppStoreProvider({ children }) {
       restaurantOrders,
       restaurantOffers,
       approvedAds,
+      subscriptions,
       cart,
       cartTotal,
       cartWarning,
