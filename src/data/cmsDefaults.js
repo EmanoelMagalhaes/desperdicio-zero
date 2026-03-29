@@ -8,11 +8,12 @@ export const cmsDefaults = {
   home: {
     hero: {
       badge: 'Conheca a plataforma antes de criar sua conta',
-      titlePrefix: 'Plataforma para reduzir desperdicio e operar uma',
-      titleHighlight: 'Cozinha Inteligente',
-      description: 'Explore o site, veja estoque, compras, receitas e desafios com exemplos praticos do fluxo real.',
+      titlePrefix: 'Menos desperdicio. Mais controle.',
+      titleHighlight: 'Mais vendas',
+      description:
+        'Plataforma profissional para familias organizarem a despensa, restaurantes venderem melhor e parceiros ampliarem visibilidade.',
       ctaPrimary: 'Criar conta',
-      ctaSecondary: 'Ver despensa',
+      ctaSecondary: 'Ver planos',
     },
     sectionsOrder: [...CMS_SECTIONS],
     sectionsEnabled: {
