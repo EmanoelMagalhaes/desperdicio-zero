@@ -35,6 +35,7 @@ import { backendAdapter } from '../services/backendAdapter';
 import { auth } from '../services/firebaseClient';
 import { loadState, persistState } from '../services/storageService';
 import { createOffer, deleteOffer, subscribeOffers, updateOffer } from '../services/offersService';
+import { subscribeAds, updateAd } from '../services/adsService';
 import {
   createOrder as createOrderRemote,
   subscribeAllOrders,
@@ -72,6 +73,7 @@ function createEmptyOperationalState() {
     offers: [],
     orders: [],
     cmsPublic: cmsDefaults,
+    ads: [],
   };
 }
 
@@ -103,6 +105,8 @@ export function AppStoreProvider({ children }) {
   const [adminSelectedClientId, setAdminSelectedClientId] = useState('');
   const [offersStatus, setOffersStatus] = useState('idle');
   const [offersError, setOffersError] = useState('');
+  const [adsStatus, setAdsStatus] = useState('idle');
+  const [adsError, setAdsError] = useState('');
   const [ordersStatus, setOrdersStatus] = useState('idle');
   const [ordersError, setOrdersError] = useState('');
   const [cmsStatus, setCmsStatus] = useState('idle');
@@ -150,6 +154,7 @@ export function AppStoreProvider({ children }) {
           offers: prev.offers || [],
           orders: prev.orders || [],
           cmsPublic: prev.cmsPublic || cmsDefaults,
+          ads: prev.ads || [],
         }));
         setAdminSelectedClientId('');
         return;
@@ -166,6 +171,27 @@ export function AppStoreProvider({ children }) {
 
     return unsubscribe;
   }, [firebaseMode]);
+
+  useEffect(() => {
+    if (!firebaseMode) return;
+
+    setAdsStatus('loading');
+    const scope = session?.role === 'admin' ? 'admin' : 'public';
+    const unsubscribe = subscribeAds(
+      (items) => {
+        setState((prev) => ({ ...prev, ads: items }));
+        setAdsStatus('ready');
+        setAdsError('');
+      },
+      () => {
+        setAdsStatus('error');
+        setAdsError('Nao foi possivel carregar anuncios no Firebase.');
+      },
+      { scope }
+    );
+
+    return unsubscribe;
+  }, [firebaseMode, session?.role]);
 
   useEffect(() => {
     if (!firebaseMode || session?.role !== 'client') return;
@@ -391,6 +417,7 @@ export function AppStoreProvider({ children }) {
   );
 
   const offers = useMemo(() => state.offers || [], [state.offers]);
+  const ads = useMemo(() => state.ads || [], [state.ads]);
   const cmsPublic = useMemo(
     () => normalizeCms(state.cmsPublic || cmsDefaults),
     [state.cmsPublic]
@@ -413,6 +440,7 @@ export function AppStoreProvider({ children }) {
     if (!restaurantId) return [];
     return offers.filter((offer) => offer.restaurantId === restaurantId);
   }, [offers, session, activeClientId]);
+  const approvedAds = useMemo(() => ads.filter((ad) => ad.status === 'approved' && ad.isActive), [ads]);
   const cartTotal = useMemo(
     () => cart.items.reduce((acc, item) => acc + Number(item.subtotal || 0), 0),
     [cart.items]
@@ -778,6 +806,60 @@ export function AppStoreProvider({ children }) {
     [firebaseMode]
   );
 
+  const updateAdStatus = useCallback(
+    async (adId, updates) => {
+      if (!adId) return { ok: false, error: 'Anuncio invalido.' };
+
+      const current = ads.find((item) => item.id === adId);
+      if (!current) return { ok: false, error: 'Anuncio nao encontrado.' };
+
+      const nextUpdates = { ...updates };
+      const shouldActivate = updates.isActive === true;
+
+      const deactivateOthers = async () => {
+        const sameAdvertiser = ads.filter(
+          (item) => item.advertiserId === current.advertiserId && item.id !== adId
+        );
+
+        if (!sameAdvertiser.length) return;
+
+        if (firebaseMode) {
+          await Promise.all(sameAdvertiser.map((item) => updateAd(item.id, { isActive: false })));
+          return;
+        }
+
+        setState((prev) => ({
+          ...prev,
+          ads: (prev.ads || []).map((item) =>
+            item.advertiserId === current.advertiserId && item.id !== adId ? { ...item, isActive: false } : item
+          ),
+        }));
+      };
+
+      try {
+        if (firebaseMode) {
+          await updateAd(adId, nextUpdates);
+          if (shouldActivate) await deactivateOthers();
+          return { ok: true };
+        }
+
+        setState((prev) => ({
+          ...prev,
+          ads: (prev.ads || []).map((item) => (item.id === adId ? { ...item, ...nextUpdates } : item)),
+        }));
+
+        if (shouldActivate) {
+          await deactivateOthers();
+        }
+
+        return { ok: true };
+      } catch (error) {
+        return { ok: false, error: error?.message || 'Nao foi possivel atualizar o anuncio.' };
+      }
+    },
+    [ads, firebaseMode]
+  );
+
   const updateOrderStatus = useCallback(
     async (orderId, nextStatus) => {
       if (!orderId) return { ok: false, error: 'Pedido invalido.' };
@@ -1141,12 +1223,16 @@ export function AppStoreProvider({ children }) {
       offers,
       offersStatus,
       offersError,
+      ads,
+      adsStatus,
+      adsError,
       cmsPublic,
       cmsStatus,
       cmsError,
       consumerOrders,
       restaurantOrders,
       restaurantOffers,
+      approvedAds,
       cart,
       cartTotal,
       cartWarning,
@@ -1167,6 +1253,7 @@ export function AppStoreProvider({ children }) {
       createRestaurantOffer,
       updateRestaurantOffer,
       deleteRestaurantOffer,
+      updateAdStatus,
       updateOrderStatus,
       addToCart,
       replaceCartWithOffer,
@@ -1210,6 +1297,7 @@ export function AppStoreProvider({ children }) {
       createRestaurantOffer,
       updateRestaurantOffer,
       deleteRestaurantOffer,
+      updateAdStatus,
       updateOrderStatus,
       setClientApproval,
       logout,
@@ -1225,12 +1313,16 @@ export function AppStoreProvider({ children }) {
       offers,
       offersStatus,
       offersError,
+      ads,
+      adsStatus,
+      adsError,
       cmsPublic,
       cmsStatus,
       cmsError,
       consumerOrders,
       restaurantOrders,
       restaurantOffers,
+      approvedAds,
       cart,
       cartTotal,
       cartWarning,

@@ -19,12 +19,21 @@ import { daysUntil } from '../../utils/date';
 import { resolveFeaturedOffers } from '../../utils/cms';
 
 export default function LandingPage() {
-  const { demoInventory, demoShoppingList, offers, cmsPublic } = useAppStore();
+  const { demoInventory, demoShoppingList, offers, cmsPublic, ads } = useAppStore();
   const demoRecipes = recipeSuggestions(demoInventory, { profile: 'restaurant', limit: 4 });
   const criticalCount = demoInventory.filter((item) => daysUntil(item.expiry) <= 2).length;
   const activeOffers = (offers || []).filter((offer) => offer?.isActive !== false);
   const featuredOffers = resolveFeaturedOffers(offers || [], cmsPublic.featuredOffers, 4);
   const lastChanceOffers = activeOffers.filter((offer) => offer?.urgency === 'last' || offer?.isLastChance);
+  const activeAds = (ads || []).filter((ad) => ad.status === 'approved' && ad.isActive);
+
+  const sponsoredAd = activeAds
+    .slice()
+    .sort((a, b) => {
+      const aTime = new Date(a.updatedAt || a.createdAt || 0).getTime();
+      const bTime = new Date(b.updatedAt || b.createdAt || 0).getTime();
+      return bTime - aTime;
+    })[0];
 
   const heroTitlePrefix = cmsPublic.home?.hero?.titlePrefix || 'Menos desperdicio. Mais controle.';
   const heroTitleHighlight = cmsPublic.home?.hero?.titleHighlight || 'Mais vendas';
@@ -81,6 +90,47 @@ export default function LandingPage() {
               <MetricCard label="Itens na compra" value={String(demoShoppingList.length)} icon={ShoppingCart} tone="amber" />
             </div>
           </div>
+        </div>
+      </section>
+
+      <section className="rounded-[30px] border border-white/10 bg-white/[0.04] p-6">
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <div className="text-sm uppercase tracking-[0.22em] text-emerald-300">Patrocinado</div>
+            <h2 className="mt-2 text-2xl font-black">{sponsoredAd?.title || 'Espaco patrocinado'}</h2>
+            <p className="mt-3 max-w-2xl text-sm text-white/65">
+              {sponsoredAd?.description ||
+                'Destaque para marcas e parceiros com solucao alinhada a reducao de desperdicio.'}
+            </p>
+          </div>
+          <a
+            href={sponsoredAd?.ctaUrl || '#anuncie'}
+            className="rounded-2xl border border-white/10 px-4 py-2 text-sm font-semibold text-white/85 transition hover:bg-white/[0.05]"
+          >
+            {sponsoredAd?.ctaLabel || 'Quero anunciar'}
+          </a>
+        </div>
+
+        <div className="mt-6 rounded-2xl border border-white/10 bg-neutral-900 p-5">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="text-sm text-white/60">
+              {sponsoredAd?.advertiserName || 'Anunciante parceiro'}
+            </div>
+            <span className="rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3 py-1 text-xs text-emerald-200">
+              Patrocinado
+            </span>
+          </div>
+          {sponsoredAd?.imageUrl ? (
+            <img
+              src={sponsoredAd.imageUrl}
+              alt={sponsoredAd.title}
+              className="mt-4 w-full rounded-2xl border border-white/10 object-cover"
+            />
+          ) : (
+            <div className="mt-4 rounded-2xl border border-dashed border-white/10 bg-white/[0.02] p-6 text-sm text-white/55">
+              Espaco reservado para banner aprovado pelo admin.
+            </div>
+          )}
         </div>
       </section>
 
