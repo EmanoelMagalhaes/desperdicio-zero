@@ -13,6 +13,22 @@ function isValidImageUrl(value) {
   }
 }
 
+function formatPriceForInput(value) {
+  if (value === null || value === undefined || value === '') return '';
+  return String(value).replace('.', ',');
+}
+
+function sanitizePriceInput(value) {
+  return value.replace(/[^\d.,]/g, '');
+}
+
+function parsePrice(value) {
+  if (!value) return NaN;
+  const normalized = value.trim().replace(/\./g, '').replace(',', '.');
+  const parsed = Number(normalized);
+  return Number.isFinite(parsed) ? parsed : NaN;
+}
+
 export default function OfferFormPage({ returnPath = '/restaurante/ofertas' }) {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -42,7 +58,7 @@ export default function OfferFormPage({ returnPath = '/restaurante/ofertas' }) {
       title: offer.title || '',
       description: offer.description || '',
       category: offer.category || '',
-      price: offer.price ?? '',
+      price: formatPriceForInput(offer.price),
       quantityAvailable: offer.quantityAvailable ?? '',
       imageUrl: offer.imageUrl || '',
       isActive: offer.isActive !== false,
@@ -50,7 +66,9 @@ export default function OfferFormPage({ returnPath = '/restaurante/ofertas' }) {
   }, [offer]);
 
   async function handleSubmit() {
-    if (!form.title || !form.price) {
+    const parsedPrice = parsePrice(form.price);
+
+    if (!form.title || !form.price || Number.isNaN(parsedPrice)) {
       setFeedback({ type: 'error', text: 'Informe nome e preco da oferta.' });
       return;
     }
@@ -67,7 +85,7 @@ export default function OfferFormPage({ returnPath = '/restaurante/ofertas' }) {
       title: form.title,
       description: form.description,
       category: form.category,
-      price: Number(form.price),
+      price: parsedPrice,
       quantityAvailable: form.quantityAvailable ? Number(form.quantityAvailable) : null,
       imageUrl: form.imageUrl || '',
       isActive: form.isActive,
@@ -119,10 +137,13 @@ export default function OfferFormPage({ returnPath = '/restaurante/ofertas' }) {
               />
               <input
                 value={form.price}
-                onChange={(event) => setForm({ ...form, price: event.target.value })}
+                onChange={(event) =>
+                  setForm({ ...form, price: sanitizePriceInput(event.target.value) })
+                }
                 className="w-full rounded-2xl border border-white/10 bg-neutral-900 px-4 py-3 outline-none placeholder:text-white/30 focus:border-emerald-400"
                 placeholder="Preco"
-                type="number"
+                type="text"
+                inputMode="decimal"
                 min="0"
                 step="0.01"
               />
