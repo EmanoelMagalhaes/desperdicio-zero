@@ -12,7 +12,7 @@ export default function ConsumerLayout() {
   const { consumerOrders } = useAppStore();
 
   const activeCount = useMemo(
-    () => consumerOrders.filter((order) => !['finalized', 'cancelled'].includes(order.status)).length,
+    () => consumerOrders.filter((order) => !['completed', 'cancelled'].includes(order.status)).length,
     [consumerOrders]
   );
 
