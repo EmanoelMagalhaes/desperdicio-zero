@@ -1255,20 +1255,26 @@ export function AppStoreProvider({ children }) {
         updates.businessType = payload.businessType;
       }
 
-      try {
-        if (firebaseMode) {
-          const authUser = auth?.currentUser;
-          if (!authUser) {
-            return { ok: false, error: 'Sessao invalida. Recarregue e tente novamente.' };
-          }
-          const result = await updateUserProfileRemote(authUser.uid, updates);
-          if (!result.ok) return result;
+        try {
+          if (firebaseMode) {
+            const authUser = auth?.currentUser;
+            if (!authUser) {
+              return { ok: false, error: 'Sessao invalida. Recarregue e tente novamente.' };
+            }
+            const result = await updateUserProfileRemote(authUser.uid, updates);
+            if (!result.ok) return result;
 
-          const shouldSyncName = isPartner && session.name && session.name !== name;
-          if (shouldSyncName) {
-            await updateOffersRestaurantName(authUser.uid, name);
+            const shouldSyncName = isPartner && session.name && session.name !== name;
+            if (shouldSyncName) {
+              setState((prev) => ({
+                ...prev,
+                offers: prev.offers.map((offer) =>
+                  offer.restaurantId === session.id ? { ...offer, restaurantName: name } : offer
+                ),
+              }));
+              await updateOffersRestaurantName(authUser.uid, name);
+            }
           }
-        }
 
         setSession((prev) => (prev ? { ...prev, ...updates } : prev));
         setState((prev) => ({
