@@ -3,13 +3,14 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import SectionTitle from '../../components/common/SectionTitle';
 import { useAppStore } from '../../hooks/useAppStore';
 
-function readFileAsDataUrl(file) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result);
-    reader.onerror = () => reject(new Error('Falha ao ler imagem.'));
-    reader.readAsDataURL(file);
-  });
+function isValidImageUrl(value) {
+  if (!value) return true;
+  try {
+    const url = new URL(value);
+    return url.protocol === 'http:' || url.protocol === 'https:';
+  } catch {
+    return false;
+  }
 }
 
 export default function OfferFormPage({ returnPath = '/restaurante/ofertas' }) {
@@ -48,21 +49,14 @@ export default function OfferFormPage({ returnPath = '/restaurante/ofertas' }) {
     });
   }, [offer]);
 
-  async function handleImageChange(event) {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
-    try {
-      const dataUrl = await readFileAsDataUrl(file);
-      setForm((prev) => ({ ...prev, imageUrl: dataUrl }));
-    } catch {
-      setFeedback({ type: 'error', text: 'Nao foi possivel carregar a imagem.' });
-    }
-  }
-
   async function handleSubmit() {
     if (!form.title || !form.price) {
       setFeedback({ type: 'error', text: 'Informe nome e preco da oferta.' });
+      return;
+    }
+
+    if (!isValidImageUrl(form.imageUrl)) {
+      setFeedback({ type: 'error', text: 'Informe um link valido (http ou https) para a imagem.' });
       return;
     }
 
@@ -153,13 +147,16 @@ export default function OfferFormPage({ returnPath = '/restaurante/ofertas' }) {
               </label>
             </div>
             <div className="space-y-2">
-              <label className="text-sm text-white/70">Upload de imagem</label>
+              <label className="text-sm text-white/70">Imagem (link)</label>
               <input
-                type="file"
-                accept="image/*"
-                onChange={handleImageChange}
+                value={form.imageUrl}
+                onChange={(event) => setForm({ ...form, imageUrl: event.target.value })}
                 className="w-full rounded-2xl border border-white/10 bg-neutral-900 px-4 py-3 text-sm text-white/70"
+                placeholder="https://..."
               />
+              <div className="text-xs text-white/50">
+                Use um link publico (http/https). Upload direto sera habilitado quando o Storage estiver ativo.
+              </div>
               {form.imageUrl ? (
                 <button
                   onClick={() => setForm((prev) => ({ ...prev, imageUrl: '' }))}
