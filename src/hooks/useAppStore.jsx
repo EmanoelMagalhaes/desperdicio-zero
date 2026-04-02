@@ -35,7 +35,13 @@ import {
 import { backendAdapter } from '../services/backendAdapter';
 import { auth } from '../services/firebaseClient';
 import { loadState, persistState } from '../services/storageService';
-import { createOffer, deleteOffer, subscribeOffers, updateOffer } from '../services/offersService';
+import {
+  createOffer,
+  deleteOffer,
+  subscribeOffers,
+  updateOffer,
+  updateOffersRestaurantName,
+} from '../services/offersService';
 import { subscribeAds, updateAd } from '../services/adsService';
 import { createSubscription as createSubscriptionRemote } from '../services/paymentsService';
 import {
@@ -1257,6 +1263,11 @@ export function AppStoreProvider({ children }) {
           }
           const result = await updateUserProfileRemote(authUser.uid, updates);
           if (!result.ok) return result;
+
+          const shouldSyncName = isPartner && session.name && session.name !== name;
+          if (shouldSyncName) {
+            await updateOffersRestaurantName(authUser.uid, name);
+          }
         }
 
         setSession((prev) => (prev ? { ...prev, ...updates } : prev));
@@ -1270,6 +1281,9 @@ export function AppStoreProvider({ children }) {
           ),
           adminAccounts: prev.adminAccounts.map((item) =>
             item.id === session.id ? { ...item, ...updates } : item
+          ),
+          offers: prev.offers.map((offer) =>
+            offer.restaurantId === session.id ? { ...offer, restaurantName: name } : offer
           ),
         }));
 
