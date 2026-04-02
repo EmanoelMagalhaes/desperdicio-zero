@@ -63,7 +63,7 @@ export default function OfferFormPage({ returnPath = '/restaurante/ofertas' }) {
       imageUrl: offer.imageUrl || '',
       isActive: offer.isActive !== false,
     });
-  }, [offer]);
+  }, [offer?.id]);
 
   async function handleSubmit() {
     const parsedPrice = parsePrice(form.price);
