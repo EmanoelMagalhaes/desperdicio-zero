@@ -129,34 +129,43 @@ export default function OfferFormPage({ returnPath = '/restaurante/ofertas' }) {
               placeholder="Descricao da oferta"
             />
             <div className="grid gap-4 md:grid-cols-2">
-              <input
-                value={form.category}
-                onChange={(event) => setForm({ ...form, category: event.target.value })}
-                className="w-full rounded-2xl border border-white/10 bg-neutral-900 px-4 py-3 outline-none placeholder:text-white/30 focus:border-emerald-400"
-                placeholder="Categoria"
-              />
-              <input
-                value={form.price}
-                onChange={(event) =>
-                  setForm({ ...form, price: sanitizePriceInput(event.target.value) })
-                }
-                className="w-full rounded-2xl border border-white/10 bg-neutral-900 px-4 py-3 outline-none placeholder:text-white/30 focus:border-emerald-400"
-                placeholder="Preco"
-                type="text"
-                inputMode="decimal"
-                min="0"
-                step="0.01"
-              />
+              <label className="space-y-2">
+                <span className="text-sm text-white/70">Categoria</span>
+                <input
+                  value={form.category}
+                  onChange={(event) => setForm({ ...form, category: event.target.value })}
+                  className="w-full rounded-2xl border border-white/10 bg-neutral-900 px-4 py-3 outline-none placeholder:text-white/30 focus:border-emerald-400"
+                  placeholder="Categoria"
+                />
+              </label>
+              <label className="space-y-2">
+                <span className="text-sm text-white/70">Preco (R$)</span>
+                <input
+                  value={form.price}
+                  onChange={(event) =>
+                    setForm({ ...form, price: sanitizePriceInput(event.target.value) })
+                  }
+                  className="w-full rounded-2xl border border-white/10 bg-neutral-900 px-4 py-3 outline-none placeholder:text-white/30 focus:border-emerald-400"
+                  placeholder="0,00"
+                  type="text"
+                  inputMode="decimal"
+                  min="0"
+                  step="0.01"
+                />
+              </label>
             </div>
             <div className="grid gap-4 md:grid-cols-2">
-              <input
-                value={form.quantityAvailable}
-                onChange={(event) => setForm({ ...form, quantityAvailable: event.target.value })}
-                className="w-full rounded-2xl border border-white/10 bg-neutral-900 px-4 py-3 outline-none placeholder:text-white/30 focus:border-emerald-400"
-                placeholder="Quantidade disponivel"
-                type="number"
-                min="0"
-              />
+              <label className="space-y-2">
+                <span className="text-sm text-white/70">Quantidade disponivel</span>
+                <input
+                  value={form.quantityAvailable}
+                  onChange={(event) => setForm({ ...form, quantityAvailable: event.target.value })}
+                  className="w-full rounded-2xl border border-white/10 bg-neutral-900 px-4 py-3 outline-none placeholder:text-white/30 focus:border-emerald-400"
+                  placeholder="Quantidade disponivel"
+                  type="number"
+                  min="0"
+                />
+              </label>
               <label className="flex items-center justify-between rounded-2xl border border-white/10 bg-neutral-900 px-4 py-3 text-sm text-white/70">
                 <span>Oferta ativa</span>
                 <input
