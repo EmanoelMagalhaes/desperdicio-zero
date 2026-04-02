@@ -30,6 +30,7 @@ import {
   toggleChallengeItem,
   toggleShoppingItem,
   updateUserAddress,
+  updateUserProfile as updateUserProfileRemote,
 } from '../services/firebaseDataService';
 import { backendAdapter } from '../services/backendAdapter';
 import { auth } from '../services/firebaseClient';
@@ -1225,6 +1226,61 @@ export function AppStoreProvider({ children }) {
     [session, firebaseMode]
   );
 
+  const updateUserProfile = useCallback(
+    async (payload) => {
+      if (!session?.id) return { ok: false, error: 'Sessao invalida.' };
+
+      const name = payload?.name ? payload.name.trim() : '';
+      const address = payload?.address ? payload.address.trim() : '';
+      const phone = typeof payload?.phone === 'string' ? payload.phone.replace(/[^\d]/g, '') : '';
+
+      if (!name || !address) {
+        return { ok: false, error: 'Informe nome e endereco para salvar.' };
+      }
+
+      const updates = {
+        name,
+        address,
+        phone,
+      };
+
+      const isPartner = session.role === 'client' || session.role === 'restaurant';
+      if (isPartner && typeof payload?.businessType === 'string') {
+        updates.businessType = payload.businessType;
+      }
+
+      try {
+        if (firebaseMode) {
+          const authUser = auth?.currentUser;
+          if (!authUser) {
+            return { ok: false, error: 'Sessao invalida. Recarregue e tente novamente.' };
+          }
+          const result = await updateUserProfileRemote(authUser.uid, updates);
+          if (!result.ok) return result;
+        }
+
+        setSession((prev) => (prev ? { ...prev, ...updates } : prev));
+        setState((prev) => ({
+          ...prev,
+          clientAccounts: prev.clientAccounts.map((item) =>
+            item.id === session.id ? { ...item, ...updates } : item
+          ),
+          consumerAccounts: prev.consumerAccounts.map((item) =>
+            item.id === session.id ? { ...item, ...updates } : item
+          ),
+          adminAccounts: prev.adminAccounts.map((item) =>
+            item.id === session.id ? { ...item, ...updates } : item
+          ),
+        }));
+
+        return { ok: true };
+      } catch (error) {
+        return { ok: false, error: error?.message || 'Nao foi possivel salvar seus dados.' };
+      }
+    },
+    [session, firebaseMode]
+  );
+
   const exportBackup = useCallback(() => {
     if (!session || !activeClientId) {
       return { ok: false, error: 'Nenhum cliente ativo para exportacao.' };
@@ -1323,6 +1379,7 @@ export function AppStoreProvider({ children }) {
       deleteShopping,
       toggleChallenge,
       updateAccountAddress,
+      updateUserProfile,
       exportBackup,
       backendMode: firebaseMode ? 'firebase' : 'local',
     }),
@@ -1362,6 +1419,7 @@ export function AppStoreProvider({ children }) {
       deleteShopping,
       toggleChallenge,
       updateAccountAddress,
+      updateUserProfile,
       exportBackup,
       firebaseMode,
       offers,

@@ -36,6 +36,7 @@ import OfferDetailsPage from './pages/consumer/OfferDetailsPage';
 import MyOrdersPage from './pages/consumer/MyOrdersPage';
 import CheckoutPage from './pages/consumer/CheckoutPage';
 import OrderSuccessPage from './pages/consumer/OrderSuccessPage';
+import MyDataPage from './pages/account/MyDataPage';
 import OffersListPage from './pages/restaurant/OffersListPage';
 import OfferFormPage from './pages/restaurant/OfferFormPage';
 import RestaurantOrdersPage from './pages/restaurant/RestaurantOrdersPage';
@@ -84,11 +85,12 @@ export default function App() {
 
       <Route element={<ProtectedRoute allowRoles={['client', 'restaurant']} />}>
         <Route element={<ClientLayout />}>
-          <Route path="/app" element={<Navigate to="/app/dashboard" replace />} />
-          <Route path="/app/dashboard" element={<DashboardPage />} />
-          <Route path="/app/inventory" element={<InventoryPage />} />
-          <Route path="/app/shopping" element={<ShoppingPage />} />
-          <Route path="/app/recipes" element={<RecipesPage />} />
+        <Route path="/app" element={<Navigate to="/app/dashboard" replace />} />
+        <Route path="/app/dashboard" element={<DashboardPage />} />
+        <Route path="/app/meus-dados" element={<MyDataPage />} />
+        <Route path="/app/inventory" element={<InventoryPage />} />
+        <Route path="/app/shopping" element={<ShoppingPage />} />
+        <Route path="/app/recipes" element={<RecipesPage />} />
           <Route path="/app/tips" element={<TipsPage />} />
           <Route path="/restaurante/ofertas" element={<OffersListPage />} />
           <Route path="/restaurante/ofertas/nova" element={<OfferFormPage />} />
@@ -107,6 +109,7 @@ export default function App() {
         <Route element={<AdminLayout />}>
           <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />
           <Route path="/admin/dashboard" element={<AdminDashboard />} />
+          <Route path="/admin/meus-dados" element={<MyDataPage />} />
           <Route path="/admin/cms" element={<AdminCmsPage />} />
           <Route path="/admin/cms-publico" element={<AdminPublicCmsPage />} />
           <Route path="/admin/anuncios" element={<AdminAdsPage />} />
@@ -119,6 +122,7 @@ export default function App() {
 
       <Route element={<ProtectedRoute allowRoles={['consumer']} />}>
         <Route element={<ConsumerLayout />}>
+          <Route path="/meus-dados" element={<MyDataPage />} />
           <Route path="/meus-pedidos" element={<MyOrdersPage />} />
         </Route>
       </Route>

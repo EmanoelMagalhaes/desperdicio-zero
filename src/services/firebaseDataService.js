@@ -265,6 +265,26 @@ export async function updateUserAddress(uid, address) {
   return { ok: true };
 }
 
+export async function updateUserProfile(uid, payload) {
+  assertFirebaseReady();
+  if (!uid) return { ok: false, error: 'Usuario invalido.' };
+
+  const updates = {};
+  if (typeof payload?.name === 'string') updates.name = payload.name.trim();
+  if (typeof payload?.phone === 'string') updates.phone = payload.phone;
+  if (typeof payload?.address === 'string') updates.address = payload.address.trim();
+  if (typeof payload?.businessType === 'string') updates.businessType = payload.businessType;
+
+  if (!Object.keys(updates).length) {
+    return { ok: false, error: 'Nenhuma alteracao encontrada.' };
+  }
+
+  updates.updatedAt = serverTimestamp();
+
+  await updateDoc(userDocRef(uid), updates);
+  return { ok: true };
+}
+
 export function subscribePublicCms(onChange, onError) {
   assertFirebaseReady();
 
