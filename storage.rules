@@ -1,0 +1,27 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function userDoc() {
+      return firestore.get(/databases/(default)/documents/users/$(request.auth.uid));
+    }
+
+    function isAdmin() {
+      return isSignedIn() && userDoc().data.role == 'admin';
+    }
+
+    function isApprovedClient() {
+      return isSignedIn()
+        && userDoc().data.role == 'client'
+        && userDoc().data.approvalStatus == 'approved';
+    }
+
+    match /offers/{restaurantId}/{allPaths=**} {
+      allow read: if true;
+      allow write: if isAdmin() || (isApprovedClient() && request.auth.uid == restaurantId);
+    }
+  }
+}

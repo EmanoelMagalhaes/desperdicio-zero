@@ -2,20 +2,15 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import SectionTitle from '../../components/common/SectionTitle';
 import { useAppStore } from '../../hooks/useAppStore';
-
-function readFileAsDataUrl(file) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result);
-    reader.onerror = () => reject(new Error('Falha ao ler imagem.'));
-    reader.readAsDataURL(file);
-  });
-}
+import { compressImage, fileToDataUrl, isSupportedImage } from '../../utils/image';
+import { uploadOfferImage } from '../../services/firebaseStorageService';
+import { createId } from '../../utils/ids';
 
 export default function OfferFormPage({ returnPath = '/restaurante/ofertas' }) {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { restaurantOffers, createRestaurantOffer, updateRestaurantOffer } = useAppStore();
+  const { restaurantOffers, createRestaurantOffer, updateRestaurantOffer, session, backendMode, activeClientId } =
+    useAppStore();
 
   const offer = useMemo(
     () => restaurantOffers.find((item) => item.id === id),
@@ -33,6 +28,11 @@ export default function OfferFormPage({ returnPath = '/restaurante/ofertas' }) {
   });
   const [feedback, setFeedback] = useState({ type: '', text: '' });
   const [loading, setLoading] = useState(false);
+  const [imageFile, setImageFile] = useState(null);
+  const [imagePreview, setImagePreview] = useState('');
+  const [draftId, setDraftId] = useState('');
+
+  const MAX_IMAGE_BYTES = 4 * 1024 * 1024;
 
   useEffect(() => {
     if (!offer) return;
@@ -46,15 +46,41 @@ export default function OfferFormPage({ returnPath = '/restaurante/ofertas' }) {
       imageUrl: offer.imageUrl || '',
       isActive: offer.isActive !== false,
     });
+    setImagePreview(offer.imageUrl || '');
+    setImageFile(null);
   }, [offer]);
+
+  useEffect(() => {
+    return () => {
+      if (imagePreview && imagePreview.startsWith('blob:')) {
+        URL.revokeObjectURL(imagePreview);
+      }
+    };
+  }, [imagePreview]);
 
   async function handleImageChange(event) {
     const file = event.target.files?.[0];
     if (!file) return;
 
+    if (!isSupportedImage(file)) {
+      setFeedback({ type: 'error', text: 'Use apenas imagens JPG, PNG ou WEBP.' });
+      return;
+    }
+
+    if (file.size > MAX_IMAGE_BYTES) {
+      setFeedback({ type: 'error', text: 'Imagem muito grande. Limite de 4MB.' });
+      return;
+    }
+
     try {
-      const dataUrl = await readFileAsDataUrl(file);
-      setForm((prev) => ({ ...prev, imageUrl: dataUrl }));
+      setFeedback({ type: '', text: '' });
+      const compressed = await compressImage(file, { maxWidth: 1400, maxHeight: 1400, quality: 0.82 });
+      setImageFile(compressed);
+      const previewUrl = URL.createObjectURL(compressed);
+      setImagePreview(previewUrl);
+      if (!offer && !draftId) {
+        setDraftId(createId('offer'));
+      }
     } catch {
       setFeedback({ type: 'error', text: 'Nao foi possivel carregar a imagem.' });
     }
@@ -78,6 +104,30 @@ export default function OfferFormPage({ returnPath = '/restaurante/ofertas' }) {
       imageUrl: form.imageUrl || '',
       isActive: form.isActive,
     };
+
+    const offerId = offer?.id || draftId || createId('offer');
+    let imageUrl = form.imageUrl || '';
+
+    try {
+      if (imageFile) {
+        if (backendMode === 'firebase') {
+          const restaurantId = session?.role === 'admin' ? activeClientId : session?.id;
+          if (!restaurantId) {
+            throw new Error('Restaurante nao identificado para upload da imagem.');
+          }
+          imageUrl = await uploadOfferImage({ file: imageFile, restaurantId, offerId });
+        } else {
+          imageUrl = await fileToDataUrl(imageFile);
+        }
+      }
+
+      payload.imageUrl = imageUrl || '';
+      payload.id = offerId;
+    } catch (error) {
+      setLoading(false);
+      setFeedback({ type: 'error', text: error?.message || 'Nao foi possivel enviar a imagem.' });
+      return;
+    }
 
     const result = offer
       ? await updateRestaurantOffer(offer.id, payload)
@@ -156,13 +206,17 @@ export default function OfferFormPage({ returnPath = '/restaurante/ofertas' }) {
               <label className="text-sm text-white/70">Upload de imagem</label>
               <input
                 type="file"
-                accept="image/*"
+                accept="image/jpeg,image/png,image/webp"
                 onChange={handleImageChange}
                 className="w-full rounded-2xl border border-white/10 bg-neutral-900 px-4 py-3 text-sm text-white/70"
               />
-              {form.imageUrl ? (
+              {imagePreview || form.imageUrl ? (
                 <button
-                  onClick={() => setForm((prev) => ({ ...prev, imageUrl: '' }))}
+                  onClick={() => {
+                    setForm((prev) => ({ ...prev, imageUrl: '' }));
+                    setImageFile(null);
+                    setImagePreview('');
+                  }}
                   className="text-xs text-amber-200 hover:text-amber-100"
                 >
                   Remover imagem
@@ -203,8 +257,12 @@ export default function OfferFormPage({ returnPath = '/restaurante/ofertas' }) {
         <div className="rounded-[28px] border border-white/10 bg-white/[0.04] p-6">
           <div className="text-sm uppercase tracking-[0.2em] text-emerald-300">Preview</div>
           <div className="mt-4 overflow-hidden rounded-2xl border border-white/10 bg-neutral-900">
-            {form.imageUrl ? (
-              <img src={form.imageUrl} alt="Preview da oferta" className="h-64 w-full object-cover" />
+            {imagePreview || form.imageUrl ? (
+              <img
+                src={imagePreview || form.imageUrl}
+                alt="Preview da oferta"
+                className="h-64 w-full object-cover"
+              />
             ) : (
               <div className="flex h-64 items-center justify-center text-sm text-white/50">
                 Nenhuma imagem selecionada
