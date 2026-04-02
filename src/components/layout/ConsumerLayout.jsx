@@ -1,10 +1,11 @@
-import { ClipboardList, Tag } from 'lucide-react';
+import { ClipboardList, Tag, User } from 'lucide-react';
 import { useMemo } from 'react';
 import { useAppStore } from '../../hooks/useAppStore';
 import AppShell from './AppShell';
 
 const menuItems = [
   { to: '/ofertas', label: 'Ofertas', icon: Tag },
+  { to: '/meus-dados', label: 'Meus dados', icon: User },
   { to: '/meus-pedidos', label: 'Meus pedidos', icon: ClipboardList },
 ];
 
