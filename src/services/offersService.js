@@ -7,6 +7,7 @@ import {
   serverTimestamp,
   setDoc,
   where,
+  getDocs,
 } from 'firebase/firestore';
 import { createId } from '../utils/ids';
 import { assertFirebaseReady, db } from './firebaseClient';
@@ -65,4 +66,25 @@ export async function updateOffer(offerId, updates) {
 export async function deleteOffer(offerId) {
   assertFirebaseReady();
   await deleteDoc(doc(db, 'offers', offerId));
+}
+
+export async function updateOffersRestaurantName(restaurantId, restaurantName) {
+  assertFirebaseReady();
+  if (!restaurantId || !restaurantName) return { ok: false, error: 'Dados invalidos.' };
+
+  const offersQuery = query(collection(db, 'offers'), where('restaurantId', '==', restaurantId));
+  const snapshot = await getDocs(offersQuery);
+
+  if (snapshot.empty) return { ok: true, updated: 0 };
+
+  const updates = snapshot.docs.map((docItem) =>
+    setDoc(
+      doc(db, 'offers', docItem.id),
+      { restaurantName, updatedAt: serverTimestamp() },
+      { merge: true }
+    )
+  );
+
+  await Promise.all(updates);
+  return { ok: true, updated: snapshot.size };
 }
