@@ -1272,7 +1272,13 @@ export function AppStoreProvider({ children }) {
                   offer.restaurantId === session.id ? { ...offer, restaurantName: name } : offer
                 ),
               }));
-              await updateOffersRestaurantName(authUser.uid, name);
+              const offersToSync = (offers || []).filter((offer) => offer.restaurantId === session.id);
+              const result = await updateOffersRestaurantName(session.id, name);
+              if (result?.updated === 0 && offersToSync.length) {
+                await Promise.all(
+                  offersToSync.map((offer) => updateOffer(offer.id, { restaurantName: name }))
+                );
+              }
             }
           }
 
@@ -1298,7 +1304,7 @@ export function AppStoreProvider({ children }) {
         return { ok: false, error: error?.message || 'Nao foi possivel salvar seus dados.' };
       }
     },
-    [session, firebaseMode]
+    [session, firebaseMode, offers]
   );
 
   const exportBackup = useCallback(() => {
