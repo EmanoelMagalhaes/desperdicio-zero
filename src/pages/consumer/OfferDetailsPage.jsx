@@ -25,11 +25,12 @@ export default function OfferDetailsPage() {
 
   const price = formatCurrency(offer.price);
   const imageUrl = offer.imageUrl && offer.imageUrl.trim();
+  const restaurantLabel = offer.restaurantDisplayName || offer.restaurantName || 'Restaurante parceiro';
 
   return (
     <div>
       <SectionTitle
-        eyebrow={offer.restaurantName || 'Restaurante parceiro'}
+        eyebrow={restaurantLabel}
         title={offer.title}
         text={offer.description}
       />

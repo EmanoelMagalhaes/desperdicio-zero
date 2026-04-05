@@ -106,6 +106,10 @@ function mergeOrdersById(existing, incoming) {
   return Array.from(next.values());
 }
 
+function resolveRestaurantLabel(offer) {
+  return offer?.restaurantDisplayName || offer?.restaurantName || 'Restaurante';
+}
+
 export function AppStoreProvider({ children }) {
   const firebaseMode = backendAdapter.isFirebase();
 
@@ -594,7 +598,7 @@ export function AppStoreProvider({ children }) {
 
         return {
           restaurantId: offer.restaurantId,
-          restaurantName: offer.restaurantName,
+          restaurantName: resolveRestaurantLabel(offer),
           items: nextItems,
         };
       });
@@ -610,7 +614,7 @@ export function AppStoreProvider({ children }) {
     setCartWarning('');
     setCart({
       restaurantId: offer.restaurantId,
-      restaurantName: offer.restaurantName,
+      restaurantName: resolveRestaurantLabel(offer),
       items: [
         {
           offerId: offer.id,
@@ -1278,20 +1282,71 @@ export function AppStoreProvider({ children }) {
               const offersToSync = (offers || []).filter(
                 (offer) => offer.restaurantId === restaurantId && offer.restaurantName !== name
               );
+              const syncReport = {
+                totalByQuery: 0,
+                updatedByQuery: 0,
+                updatedByIds: 0,
+                failedByIds: 0,
+              };
 
               setState((prev) => ({
                 ...prev,
                 offers: prev.offers.map((offer) =>
-                  offer.restaurantId === session.id ? { ...offer, restaurantName: name } : offer
+                  offer.restaurantId === session.id
+                    ? { ...offer, restaurantName: name, restaurantDisplayName: name }
+                    : offer
                 ),
               }));
-              await updateOffersRestaurantName(restaurantId, name);
+              const queryResult = await updateOffersRestaurantName(restaurantId, name);
+              if (!queryResult?.ok) {
+                return {
+                  ok: false,
+                  error:
+                    'Dados do perfil foram salvos, mas a sincronizacao das ofertas falhou.',
+                };
+              }
+              syncReport.totalByQuery = queryResult?.total || 0;
+              syncReport.updatedByQuery = queryResult?.updated || 0;
+
               if (offersToSync.length) {
-                await Promise.all(
+                const settled = await Promise.allSettled(
                   offersToSync.map((offer) =>
                     updateOffer(offer.id, { restaurantName: name, restaurantId })
                   )
                 );
+
+                syncReport.updatedByIds = settled.filter((item) => item.status === 'fulfilled').length;
+                syncReport.failedByIds = settled.filter((item) => item.status === 'rejected').length;
+              }
+
+              if (syncReport.failedByIds > 0) {
+                return {
+                  ok: false,
+                  error:
+                    'Dados do perfil foram salvos, mas parte das ofertas nao sincronizou. Tente salvar novamente.',
+                };
+              }
+
+              const hasOffersByQuery = syncReport.totalByQuery > 0;
+              const coveredByQuery =
+                (offersToSync.length === 0 && syncReport.totalByQuery >= 0) ||
+                syncReport.totalByQuery >= offersToSync.length;
+              const coveredByIds = offersToSync.length === 0 || syncReport.updatedByIds === offersToSync.length;
+
+              if (hasOffersByQuery && !coveredByQuery) {
+                return {
+                  ok: false,
+                  error:
+                    'Dados do perfil foram salvos, mas nao foi possivel confirmar sincronizacao das ofertas.',
+                };
+              }
+
+              if (!coveredByIds) {
+                return {
+                  ok: false,
+                  error:
+                    'Dados do perfil foram salvos, mas nem todas as ofertas carregadas foram sincronizadas.',
+                };
               }
             }
           }
@@ -1309,7 +1364,9 @@ export function AppStoreProvider({ children }) {
             item.id === session.id ? { ...item, ...updates } : item
           ),
           offers: prev.offers.map((offer) =>
-            offer.restaurantId === session.id ? { ...offer, restaurantName: name } : offer
+            offer.restaurantId === session.id
+              ? { ...offer, restaurantName: name, restaurantDisplayName: name }
+              : offer
           ),
         }));
 

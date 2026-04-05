@@ -12,6 +12,7 @@ export default function OfferCard({ offer, onAdd }) {
   const showOriginalPrice = Number.isFinite(originalPrice) && originalPrice > Number(offer.price || 0);
   const imageUrl = offer.imageUrl && offer.imageUrl.trim();
   const isLastChance = offer.urgency === 'last' || offer.isLastChance;
+  const restaurantLabel = offer.restaurantDisplayName || offer.restaurantName || 'Restaurante';
 
   return (
     <div className="rounded-[28px] border border-white/10 bg-white/[0.04] p-5 shadow-lg shadow-black/20">
@@ -27,7 +28,7 @@ export default function OfferCard({ offer, onAdd }) {
 
       <div className="mt-4">
         <div className="flex items-center justify-between text-xs uppercase tracking-[0.2em] text-emerald-300">
-          <span>{offer.restaurantName}</span>
+          <span>{restaurantLabel}</span>
           {isLastChance ? (
             <span className="rounded-full border border-amber-500/30 bg-amber-500/10 px-2 py-0.5 text-[10px] text-amber-200">
               Ultima chance
