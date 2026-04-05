@@ -134,12 +134,13 @@ service cloud.firestore {
     }
 
     match /subscriptions/{subscriptionId} {
-      allow create: if isSignedIn()
-        && request.resource.data.userId == request.auth.uid;
       allow read: if isAdmin()
         || (isSignedIn() && resource.data.userId == request.auth.uid);
-      allow update: if isAdmin();
-      allow delete: if false;
+      allow create, update, delete: if false;
+    }
+
+    match /subscription_events/{eventId} {
+      allow read, write: if false;
     }
 
     match /{document=**} {

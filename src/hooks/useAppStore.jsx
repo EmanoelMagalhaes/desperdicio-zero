@@ -43,7 +43,11 @@ import {
   updateOffersRestaurantName,
 } from '../services/offersService';
 import { subscribeAds, updateAd } from '../services/adsService';
-import { createSubscription as createSubscriptionRemote } from '../services/paymentsService';
+import {
+  createSubscription as createSubscriptionRemote,
+  reconcileSubscription as reconcileSubscriptionRemote,
+  subscribeUserSubscriptions,
+} from '../services/paymentsService';
 import {
   createOrder as createOrderRemote,
   subscribeAllOrders,
@@ -108,6 +112,36 @@ function mergeOrdersById(existing, incoming) {
 
 function resolveRestaurantLabel(offer) {
   return offer?.restaurantDisplayName || offer?.restaurantName || 'Restaurante';
+}
+
+const PANTRY_LIMIT_FREE = 50;
+const PANTRY_ELIGIBLE_BY_ROLE = {
+  consumer: ['familia-plus'],
+  client: ['gestao-plus', 'marketplace-flex', 'marketplace-pro'],
+  restaurant: ['gestao-plus', 'marketplace-flex', 'marketplace-pro'],
+};
+
+function toMillis(value) {
+  if (!value) return 0;
+  if (value instanceof Date) return value.getTime();
+  if (typeof value === 'number') return value;
+  if (typeof value === 'string') {
+    const parsed = Date.parse(value);
+    return Number.isNaN(parsed) ? 0 : parsed;
+  }
+  return 0;
+}
+
+function subscriptionSortDesc(a, b) {
+  const aMillis = toMillis(a.updatedAt || a.createdAt);
+  const bMillis = toMillis(b.updatedAt || b.createdAt);
+  return bMillis - aMillis;
+}
+
+function hasPantryEntitlementForRole(role, planId, status) {
+  if (status !== 'active') return false;
+  const eligible = PANTRY_ELIGIBLE_BY_ROLE[role] || [];
+  return eligible.includes(planId);
 }
 
 export function AppStoreProvider({ children }) {
@@ -220,6 +254,25 @@ export function AppStoreProvider({ children }) {
         challenges: { ...prev.challenges, [clientId]: data.challenges },
       }));
     });
+
+    return unsubscribe;
+  }, [firebaseMode, session]);
+
+  useEffect(() => {
+    if (!firebaseMode || !session) return;
+
+    const userId = auth?.currentUser?.uid || session.id;
+    if (!userId) return;
+
+    const unsubscribe = subscribeUserSubscriptions(
+      userId,
+      (items) => {
+        setState((prev) => ({ ...prev, subscriptions: items }));
+      },
+      () => {
+        setState((prev) => ({ ...prev, subscriptions: [] }));
+      }
+    );
 
     return unsubscribe;
   }, [firebaseMode, session]);
@@ -433,6 +486,27 @@ export function AppStoreProvider({ children }) {
   const offers = useMemo(() => state.offers || [], [state.offers]);
   const ads = useMemo(() => state.ads || [], [state.ads]);
   const subscriptions = useMemo(() => state.subscriptions || [], [state.subscriptions]);
+  const currentSessionUserId = useMemo(
+    () => (firebaseMode ? auth?.currentUser?.uid || session?.id || '' : session?.id || ''),
+    [firebaseMode, session?.id]
+  );
+  const userSubscriptions = useMemo(() => {
+    if (!currentSessionUserId) return [];
+    return subscriptions
+      .filter((item) => item.userId === currentSessionUserId)
+      .slice()
+      .sort(subscriptionSortDesc);
+  }, [subscriptions, currentSessionUserId]);
+  const activeSubscription = useMemo(
+    () => userSubscriptions.find((item) => item.status === 'active') || null,
+    [userSubscriptions]
+  );
+  const pantryUnlimited = useMemo(() => {
+    if (!session) return false;
+    if (!activeSubscription) return false;
+    return hasPantryEntitlementForRole(session.role, activeSubscription.planId, activeSubscription.status);
+  }, [session, activeSubscription]);
+  const inventoryLimit = useMemo(() => (pantryUnlimited ? null : PANTRY_LIMIT_FREE), [pantryUnlimited]);
   const cmsPublic = useMemo(
     () => normalizeCms(state.cmsPublic || cmsDefaults),
     [state.cmsPublic]
@@ -955,8 +1029,28 @@ export function AppStoreProvider({ children }) {
 
       try {
         if (firebaseMode) {
-          const created = await createSubscriptionRemote(basePayload);
-          return { ok: true, subscription: created, checkoutUrl: plan.checkoutUrl || '' };
+          const authUser = auth?.currentUser;
+          if (!authUser) {
+            return { ok: false, error: 'Sessao invalida. Recarregue e tente novamente.' };
+          }
+
+          const token = await authUser.getIdToken();
+          const created = await createSubscriptionRemote({
+            ...basePayload,
+            token,
+          });
+
+          if (created?.subscription) {
+            setState((prev) => ({
+              ...prev,
+              subscriptions: [
+                created.subscription,
+                ...(prev.subscriptions || []).filter((item) => item.id !== created.subscription.id),
+              ],
+            }));
+          }
+
+          return { ok: true, subscription: created.subscription, checkoutUrl: created.checkoutUrl || '' };
         }
 
         const created = {
@@ -977,6 +1071,46 @@ export function AppStoreProvider({ children }) {
       }
     },
     [session, firebaseMode]
+  );
+
+  const reconcileSubscription = useCallback(
+    async (payload = {}) => {
+      if (!firebaseMode) {
+        return { ok: false, error: 'Reconciliacao disponivel apenas no modo Firebase.' };
+      }
+
+      const authUser = auth?.currentUser;
+      if (!authUser) {
+        return { ok: false, error: 'Sessao invalida. Faca login novamente.' };
+      }
+
+      try {
+        const token = await authUser.getIdToken();
+        const result = await reconcileSubscriptionRemote({
+          token,
+          subscriptionRef: payload.subscriptionRef || '',
+          preapprovalId: payload.preapprovalId || '',
+        });
+
+        if (result?.subscription) {
+          setState((prev) => ({
+            ...prev,
+            subscriptions: [
+              result.subscription,
+              ...(prev.subscriptions || []).filter((item) => item.id !== result.subscription.id),
+            ],
+          }));
+        }
+
+        return result;
+      } catch (error) {
+        return {
+          ok: false,
+          error: error?.message || 'Nao foi possivel reconciliar a assinatura.',
+        };
+      }
+    },
+    [firebaseMode]
   );
   const requestPasswordReset = useCallback(
     async (email) => {
@@ -1438,6 +1572,10 @@ export function AppStoreProvider({ children }) {
       restaurantOffers,
       approvedAds,
       subscriptions,
+      userSubscriptions,
+      activeSubscription,
+      pantryUnlimited,
+      inventoryLimit,
       cart,
       cartTotal,
       cartWarning,
@@ -1460,6 +1598,7 @@ export function AppStoreProvider({ children }) {
       deleteRestaurantOffer,
       updateAdStatus,
       startPlanSubscription,
+      reconcileSubscription,
       updateOrderStatus,
       addToCart,
       replaceCartWithOffer,
@@ -1506,6 +1645,7 @@ export function AppStoreProvider({ children }) {
       deleteRestaurantOffer,
       updateAdStatus,
       startPlanSubscription,
+      reconcileSubscription,
       updateOrderStatus,
       setClientApproval,
       logout,
@@ -1533,6 +1673,10 @@ export function AppStoreProvider({ children }) {
       restaurantOffers,
       approvedAds,
       subscriptions,
+      userSubscriptions,
+      activeSubscription,
+      pantryUnlimited,
+      inventoryLimit,
       cart,
       cartTotal,
       cartWarning,
