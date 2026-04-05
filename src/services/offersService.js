@@ -2,6 +2,7 @@ import {
   collection,
   deleteDoc,
   doc,
+  getDoc,
   onSnapshot,
   query,
   serverTimestamp,
@@ -16,6 +17,31 @@ function mapOffers(snapshot) {
   return snapshot.docs.map((docItem) => ({ id: docItem.id, ...docItem.data() }));
 }
 
+async function withCanonicalRestaurantNames(offers) {
+  const ids = Array.from(new Set((offers || []).map((offer) => offer?.restaurantId).filter(Boolean)));
+  if (!ids.length) return offers;
+
+  const profiles = await Promise.all(
+    ids.map(async (id) => {
+      try {
+        const snapshot = await getDoc(doc(db, 'users', id));
+        const profile = snapshot.exists() ? snapshot.data() || {} : {};
+        const name = typeof profile.name === 'string' ? profile.name.trim() : '';
+        return [id, name];
+      } catch {
+        return [id, ''];
+      }
+    })
+  );
+
+  const nameById = new Map(profiles);
+  return (offers || []).map((offer) => ({
+    ...offer,
+    restaurantDisplayName:
+      nameById.get(offer.restaurantId) || offer.restaurantName || 'Restaurante',
+  }));
+}
+
 export function subscribeOffers(onChange, onError, options = {}) {
   assertFirebaseReady();
 
@@ -27,7 +53,10 @@ export function subscribeOffers(onChange, onError, options = {}) {
   return onSnapshot(
     baseQuery,
     (snapshot) => {
-      onChange(mapOffers(snapshot));
+      const mapped = mapOffers(snapshot);
+      withCanonicalRestaurantNames(mapped)
+        .then((enriched) => onChange(enriched))
+        .catch(() => onChange(mapped));
     },
     (error) => {
       if (onError) onError(error);
@@ -75,16 +104,22 @@ export async function updateOffersRestaurantName(restaurantId, restaurantName) {
   const offersQuery = query(collection(db, 'offers'), where('restaurantId', '==', restaurantId));
   const snapshot = await getDocs(offersQuery);
 
-  if (snapshot.empty) return { ok: true, updated: 0 };
+  if (snapshot.empty) return { ok: true, total: 0, updated: 0 };
 
-  const updates = snapshot.docs.map((docItem) =>
+  const normalizedName = restaurantName.trim();
+  const docsToUpdate = snapshot.docs.filter((docItem) => {
+    const data = docItem.data() || {};
+    return (data.restaurantName || '') !== normalizedName;
+  });
+
+  const updates = docsToUpdate.map((docItem) =>
     setDoc(
       doc(db, 'offers', docItem.id),
-      { restaurantName, updatedAt: serverTimestamp() },
+      { restaurantName: normalizedName, updatedAt: serverTimestamp() },
       { merge: true }
     )
   );
 
   await Promise.all(updates);
-  return { ok: true, updated: snapshot.size };
+  return { ok: true, total: snapshot.size, updated: docsToUpdate.length };
 }

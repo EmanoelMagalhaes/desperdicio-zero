@@ -9,6 +9,10 @@ function isLastChance(offer) {
   return offer?.urgency === 'last' || offer?.isLastChance;
 }
 
+function restaurantLabel(offer) {
+  return offer?.restaurantDisplayName || offer?.restaurantName || 'Restaurante';
+}
+
 export default function OffersPage() {
   const {
     offers = [],
@@ -37,7 +41,7 @@ export default function OffersPage() {
   }, [activeOffers]);
 
   const restaurants = useMemo(() => {
-    const set = new Set(activeOffers.map((offer) => offer.restaurantName).filter(Boolean));
+    const set = new Set(activeOffers.map((offer) => restaurantLabel(offer)).filter(Boolean));
     return Array.from(set);
   }, [activeOffers]);
 
@@ -55,7 +59,7 @@ export default function OffersPage() {
     const filtered = activeOffers
       .filter((offer) => (searchText ? offer.title?.toLowerCase().includes(searchText) : true))
       .filter((offer) => (categoryFilter === 'all' ? true : offer.category === categoryFilter))
-      .filter((offer) => (restaurantFilter === 'all' ? true : offer.restaurantName === restaurantFilter))
+      .filter((offer) => (restaurantFilter === 'all' ? true : restaurantLabel(offer) === restaurantFilter))
       .filter((offer) => (urgencyFilter === 'all' ? true : isLastChance(offer)));
 
     const sorted = [...filtered];
