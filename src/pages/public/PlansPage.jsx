@@ -101,7 +101,7 @@ export default function PlansPage() {
       </div>
 
       <div className="rounded-[30px] border border-white/10 bg-white/[0.04] p-6 text-sm text-white/65">
-        Pagamentos online serao ativados em breve. Ate la, o time pode ajudar a configurar o melhor plano para voce.
+        Assinaturas pagas sao processadas com Mercado Pago. A liberacao do plano ocorre automaticamente apos confirmacao.
       </div>
     </div>
   );
