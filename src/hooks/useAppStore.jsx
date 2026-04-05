@@ -773,8 +773,14 @@ export function AppStoreProvider({ children }) {
       if (!offerId) return { ok: false, error: 'Oferta invalida.' };
 
       try {
+        const restaurantId = session?.role === 'admin' ? activeClientId : session?.id;
+        const nextUpdates =
+          restaurantId && !updates?.restaurantId
+            ? { ...updates, restaurantId }
+            : updates;
+
         if (firebaseMode) {
-          const payload = await updateOffer(offerId, updates);
+          const payload = await updateOffer(offerId, nextUpdates);
           setState((prev) => ({
             ...prev,
             offers: upsertOffer(prev.offers || [], { id: offerId, ...payload }),
@@ -785,7 +791,9 @@ export function AppStoreProvider({ children }) {
         setState((prev) => ({
           ...prev,
           offers: (prev.offers || []).map((offer) =>
-            offer.id === offerId ? { ...offer, ...updates, updatedAt: new Date().toISOString() } : offer
+            offer.id === offerId
+              ? { ...offer, ...nextUpdates, updatedAt: new Date().toISOString() }
+              : offer
           ),
         }));
         return { ok: true };
@@ -793,7 +801,7 @@ export function AppStoreProvider({ children }) {
         return { ok: false, error: error?.message || 'Nao foi possivel atualizar a oferta.' };
       }
     },
-    [firebaseMode]
+    [firebaseMode, session?.id, session?.role, activeClientId]
   );
 
   const deleteRestaurantOffer = useCallback(
@@ -1266,17 +1274,23 @@ export function AppStoreProvider({ children }) {
 
             const shouldSyncName = isPartner && session.name && session.name !== name;
             if (shouldSyncName) {
+              const restaurantId = session.id;
+              const offersToSync = (offers || []).filter(
+                (offer) => offer.restaurantId === restaurantId && offer.restaurantName !== name
+              );
+
               setState((prev) => ({
                 ...prev,
                 offers: prev.offers.map((offer) =>
                   offer.restaurantId === session.id ? { ...offer, restaurantName: name } : offer
                 ),
               }));
-              const offersToSync = (offers || []).filter((offer) => offer.restaurantId === session.id);
-              const result = await updateOffersRestaurantName(session.id, name);
-              if (result?.updated === 0 && offersToSync.length) {
+              await updateOffersRestaurantName(restaurantId, name);
+              if (offersToSync.length) {
                 await Promise.all(
-                  offersToSync.map((offer) => updateOffer(offer.id, { restaurantName: name }))
+                  offersToSync.map((offer) =>
+                    updateOffer(offer.id, { restaurantName: name, restaurantId })
+                  )
                 );
               }
             }
