@@ -1,5 +1,5 @@
 import { adminAuth, adminDb } from '../_lib/firebaseAdmin.js';
-import { getPreapprovalById } from '../_lib/mercadoPagoClient.js';
+import { findPreapprovalByExternalReference, getPreapprovalById } from '../_lib/mercadoPagoClient.js';
 import { applyCors, getBearerToken, handleOptions, readJsonBody, sendJson } from '../_lib/http.js';
 import { syncSubscriptionFromPreapproval } from '../_lib/subscriptionSync.js';
 
@@ -80,16 +80,34 @@ export default async function handler(req, res) {
 
     const target = targetSnapshot.data() || {};
     const preapprovalId = preapprovalIdFromBody || target.providerSubscriptionId || '';
-    if (!preapprovalId) {
+    const externalReference = subscriptionRef || target.externalReference || target.id || targetSnapshot.id;
+
+    let preapproval = null;
+    let resolvedBy = '';
+
+    if (preapprovalId) {
+      preapproval = await getPreapprovalById(preapprovalId);
+      resolvedBy = 'provider-subscription-id';
+    } else if (externalReference) {
+      preapproval = await findPreapprovalByExternalReference(externalReference);
+      resolvedBy = preapproval ? 'external-reference' : '';
+    }
+
+    if (!preapproval) {
+      const reason = preapprovalId
+        ? 'provider-subscription-not-found'
+        : externalReference
+          ? 'provider-subscription-not-found-by-external-reference'
+          : 'provider-subscription-id-missing';
       return sendJson(res, 200, {
         ok: true,
         reconciled: false,
-        reason: 'provider-subscription-id-missing',
+        reason,
+        attemptedExternalReference: externalReference || '',
         subscription: normalizeSubscription(targetSnapshot),
       });
     }
 
-    const preapproval = await getPreapprovalById(preapprovalId);
     const result = await syncSubscriptionFromPreapproval({
       preapproval,
       source: 'reconcile',
@@ -102,6 +120,7 @@ export default async function handler(req, res) {
     return sendJson(res, 200, {
       ok: true,
       reconciled: true,
+      resolvedBy,
       subscription: result.subscription,
     });
   } catch (error) {
