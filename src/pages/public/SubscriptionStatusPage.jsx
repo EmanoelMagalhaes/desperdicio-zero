@@ -3,6 +3,14 @@ import { Link, useParams, useSearchParams } from 'react-router-dom';
 import SectionTitle from '../../components/common/SectionTitle';
 import { useAppStore } from '../../hooks/useAppStore';
 
+const MAX_RECONCILE_ATTEMPTS = 6;
+const RECONCILE_RETRY_DELAY_MS = 3500;
+const RETRYABLE_REASONS = new Set([
+  'provider-subscription-id-missing',
+  'provider-subscription-not-found',
+  'provider-subscription-not-found-by-external-reference',
+]);
+
 const STATUS_CONTENT = {
   sucesso: {
     eyebrow: 'Pagamento aprovado',
@@ -35,10 +43,21 @@ export default function SubscriptionStatusPage() {
     if (!subscriptionRef && !preapprovalId) return;
 
     let cancelled = false;
-    setSyncState({ loading: true, message: '', error: '' });
+    let timerId = null;
 
-    reconcileSubscription({ subscriptionRef, preapprovalId }).then((result) => {
+    async function runReconcileAttempt(attempt) {
       if (cancelled) return;
+
+      setSyncState({
+        loading: true,
+        message:
+          attempt > 1 ? `Tentando sincronizar novamente (${attempt}/${MAX_RECONCILE_ATTEMPTS})...` : '',
+        error: '',
+      });
+
+      const result = await reconcileSubscription({ subscriptionRef, preapprovalId });
+      if (cancelled) return;
+
       if (!result?.ok) {
         setSyncState({
           loading: false,
@@ -57,15 +76,34 @@ export default function SubscriptionStatusPage() {
         return;
       }
 
+      const reason = String(result?.reason || '').trim().toLowerCase();
+      const shouldRetry = RETRYABLE_REASONS.has(reason) && attempt < MAX_RECONCILE_ATTEMPTS;
+
+      if (shouldRetry) {
+        setSyncState({
+          loading: true,
+          message: 'Pagamento identificado. Aguardando confirmacao final da assinatura...',
+          error: '',
+        });
+        timerId = window.setTimeout(() => {
+          runReconcileAttempt(attempt + 1);
+        }, RECONCILE_RETRY_DELAY_MS);
+        return;
+      }
+
       setSyncState({
         loading: false,
-        message: 'Assinatura registrada. Aguardando confirmacao do provedor de pagamento.',
+        message:
+          'Assinatura registrada. Aguardando confirmacao do provedor de pagamento. Se o status nao mudar, atualize esta pagina em alguns minutos.',
         error: '',
       });
-    });
+    }
+
+    runReconcileAttempt(1);
 
     return () => {
       cancelled = true;
+      if (timerId) window.clearTimeout(timerId);
     };
   }, [session, subscriptionRef, preapprovalId, reconcileSubscription]);
 

@@ -38,6 +38,38 @@ export async function getPreapprovalById(preapprovalId) {
   return mercadoPagoRequest(`/preapproval/${encodeURIComponent(preapprovalId)}`);
 }
 
+function toMillis(value) {
+  if (!value) return 0;
+  if (typeof value === 'number') return value;
+  if (typeof value === 'string') {
+    const parsed = Date.parse(value);
+    return Number.isNaN(parsed) ? 0 : parsed;
+  }
+  return 0;
+}
+
+function pickLatestPreapproval(records) {
+  if (!Array.isArray(records) || records.length === 0) return null;
+  return records
+    .slice()
+    .sort((a, b) => {
+      const aMillis = toMillis(a?.date_created);
+      const bMillis = toMillis(b?.date_created);
+      return bMillis - aMillis;
+    })[0];
+}
+
+export async function findPreapprovalByExternalReference(externalReference) {
+  const reference = normalizeQueryValue(externalReference).trim();
+  if (!reference) return null;
+
+  const payload = await mercadoPagoRequest(
+    `/preapproval/search?external_reference=${encodeURIComponent(reference)}`
+  );
+  const records = Array.isArray(payload?.results) ? payload.results : [];
+  return pickLatestPreapproval(records);
+}
+
 function extractIdFromResourceUrl(resourceUrl) {
   if (!resourceUrl || typeof resourceUrl !== 'string') return '';
   const cleaned = resourceUrl.trim();
