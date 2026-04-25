@@ -2,6 +2,10 @@ import { NavLink, useLocation } from 'react-router-dom';
 import { getMobileBottomNavItems } from './publicNavConfig';
 
 export default function PublicBottomNav({ session, cartCount = 0 }) {
+  if (session?.role === 'admin') {
+    return null;
+  }
+
   const location = useLocation();
   const pathname = location.pathname;
   const baseItems = getMobileBottomNavItems(session);
@@ -39,7 +43,7 @@ export default function PublicBottomNav({ session, cartCount = 0 }) {
 
   return (
     <nav
-      className="fixed inset-x-0 bottom-0 z-40 border-t border-white/10 bg-neutral-950/95 backdrop-blur xl:hidden"
+      className="fixed inset-x-0 bottom-0 z-40 border-t border-white/10 bg-neutral-950/95 backdrop-blur lg:hidden"
       aria-label="Navegacao principal"
     >
       <div className="mx-auto grid max-w-md grid-cols-5 gap-1 px-2 pb-[calc(0.45rem+env(safe-area-inset-bottom))] pt-1.5 md:max-w-3xl md:px-3 lg:max-w-4xl lg:gap-1.5">

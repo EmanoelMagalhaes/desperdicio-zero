@@ -1,7 +1,8 @@
-import { Download, LogOut, Shield, User } from 'lucide-react';
-import { useState } from 'react';
-import { NavLink, Outlet } from 'react-router-dom';
+import { Download, LogOut, Menu, Shield, User, X } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import { useAppStore } from '../../hooks/useAppStore';
+import { getRoleBottomNavItems } from '../navigation/roleNavConfig';
 
 function feedbackTone(type) {
   if (type === 'error') {
@@ -20,6 +21,8 @@ export default function AppShell({
 }) {
   const { session, pendingCount, logout, activeClient, exportBackup } = useAppStore();
   const [feedback, setFeedback] = useState({ type: '', text: '' });
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const location = useLocation();
 
   const sessionLabel =
     session?.role === 'admin'
@@ -31,6 +34,32 @@ export default function AppShell({
           : 'Cliente';
   const contextLabel = session?.role === 'admin' && activeClient ? `Cliente ativo: ${activeClient.name}` : subtitle;
   const resolvedStatusValue = typeof statusValue === 'number' ? statusValue : pendingCount;
+  const roleBottomNavItems = useMemo(() => getRoleBottomNavItems(session?.role), [session?.role]);
+  const showRoleBottomNav = roleBottomNavItems.length > 0;
+
+  useEffect(() => {
+    setDrawerOpen(false);
+  }, [location.pathname]);
+
+  useEffect(() => {
+    function handleEscape(event) {
+      if (event.key === 'Escape') {
+        setDrawerOpen(false);
+      }
+    }
+
+    window.addEventListener('keydown', handleEscape);
+    return () => window.removeEventListener('keydown', handleEscape);
+  }, []);
+
+  useEffect(() => {
+    if (!drawerOpen) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [drawerOpen]);
 
   async function handleExport() {
     try {
@@ -119,7 +148,7 @@ export default function AppShell({
         </aside>
 
         <div className="flex-1">
-          <header className="sticky top-0 z-20 border-b border-white/10 bg-neutral-950/90 backdrop-blur">
+          <header className="fixed left-0 right-0 top-0 z-30 border-b border-white/10 bg-neutral-950/95 backdrop-blur lg:left-72">
             <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-4 md:px-6">
               <div className="min-w-0">
                 <div className="text-base font-bold sm:text-lg">Desperdicio Zero</div>
@@ -127,6 +156,15 @@ export default function AppShell({
               </div>
 
               <div className="flex items-center gap-2 sm:gap-3">
+                <button
+                  onClick={() => setDrawerOpen(true)}
+                  className="inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.03] text-white/85 transition hover:bg-white/[0.08] lg:hidden"
+                  aria-label="Abrir menu do painel"
+                  title="Menu"
+                >
+                  <Menu size={16} />
+                </button>
+
                 <div className="hidden rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-2 text-sm text-white/70 sm:block">
                   {resolvedStatusValue} {statusLabel}
                 </div>
@@ -172,50 +210,117 @@ export default function AppShell({
                 {resolvedStatusValue} {statusLabel}
               </div>
             </div>
-
-            {feedback.text ? (
-              <div className="mx-auto max-w-7xl px-4 pb-4 md:px-6">
-                <div className={`rounded-2xl px-4 py-3 text-sm ${feedbackTone(feedback.type)}`}>{feedback.text}</div>
-              </div>
-            ) : null}
           </header>
 
-          <main className="mx-auto max-w-7xl px-4 py-6 pb-[6.5rem] md:px-6 lg:pb-6">
+          {feedback.text ? (
+            <div className="mx-auto max-w-7xl px-4 pb-2 pt-[6.6rem] md:px-6 md:pt-[5.7rem]">
+              <div className={`rounded-2xl px-4 py-3 text-sm ${feedbackTone(feedback.type)}`}>{feedback.text}</div>
+            </div>
+          ) : null}
+
+          <main
+            className={`mx-auto max-w-7xl px-4 py-6 md:px-6 ${
+              feedback.text
+                ? showRoleBottomNav
+                  ? 'pb-[6.5rem] pt-2 lg:pb-6'
+                  : 'pb-6 pt-2'
+                : showRoleBottomNav
+                  ? 'pb-[6.5rem] pt-[6.6rem] md:pt-[5.7rem] lg:pb-6'
+                  : 'pb-6 pt-[6.6rem] md:pt-[5.7rem]'
+            }`}
+          >
             <Outlet />
           </main>
         </div>
       </div>
 
-      <nav className="fixed inset-x-0 bottom-0 z-30 border-t border-white/10 bg-neutral-950/95 backdrop-blur lg:hidden">
-        <div className="mx-auto flex max-w-md items-center justify-around px-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))] pt-2">
+      <div
+        className={`fixed inset-0 z-40 bg-black/70 transition lg:hidden ${
+          drawerOpen ? 'opacity-100' : 'pointer-events-none opacity-0'
+        }`}
+        onClick={() => setDrawerOpen(false)}
+        aria-hidden={!drawerOpen}
+      />
+
+      <aside
+        className={`fixed right-0 top-0 z-50 h-screen w-[86vw] max-w-sm border-l border-white/10 bg-neutral-950 p-5 shadow-2xl shadow-black/60 transition-transform lg:hidden ${
+          drawerOpen ? 'translate-x-0' : 'translate-x-full'
+        }`}
+        aria-hidden={!drawerOpen}
+      >
+        <div className="mb-5 flex items-center justify-between">
+          <div className="text-lg font-bold">Menu do painel</div>
+          <button
+            onClick={() => setDrawerOpen(false)}
+            className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 bg-neutral-900 text-white/85 transition hover:bg-neutral-800"
+            aria-label="Fechar menu do painel"
+            title="Fechar"
+          >
+            <X size={18} />
+          </button>
+        </div>
+
+        <nav className="space-y-2">
           {menuItems.map((item) => {
             const Icon = item.icon;
             return (
               <NavLink
-                key={`mobile-bottom-${item.to}`}
+                key={`drawer-shell-${item.to}`}
                 to={item.to}
+                onClick={() => setDrawerOpen(false)}
                 className={({ isActive }) =>
-                  `relative flex h-12 w-12 items-center justify-center rounded-2xl transition ${
+                  `flex w-full items-center gap-3 rounded-2xl border px-4 py-3 text-sm font-semibold transition ${
                     isActive
-                      ? 'bg-emerald-500/20 text-emerald-300'
-                      : 'text-white/55 hover:bg-white/[0.06] hover:text-white/85'
+                      ? 'border-emerald-500/35 bg-emerald-500/12 text-emerald-200'
+                      : 'border-white/10 bg-neutral-900 text-white/80 hover:bg-neutral-800'
                   }`
                 }
-                aria-label={item.label}
-                title={item.label}
               >
-                {({ isActive }) => (
-                  <>
-                    <Icon size={18} />
-                    <span className="sr-only">{item.label}</span>
-                    {isActive ? <span className="absolute -bottom-0.5 h-1 w-5 rounded-full bg-emerald-400" /> : null}
-                  </>
-                )}
+                <Icon size={16} />
+                <span>{item.label}</span>
               </NavLink>
             );
           })}
+        </nav>
+
+        <div className="mt-5 border-t border-white/10 pt-4">
+          <button
+            onClick={logout}
+            className="flex w-full items-center justify-center gap-2 rounded-2xl border border-white/10 bg-neutral-900 px-4 py-3 text-sm font-semibold text-white/85 transition hover:bg-neutral-800"
+          >
+            <LogOut size={16} />
+            Sair
+          </button>
         </div>
-      </nav>
+      </aside>
+
+      {showRoleBottomNav ? (
+        <nav className="fixed inset-x-0 bottom-0 z-30 border-t border-white/10 bg-neutral-950/95 backdrop-blur lg:hidden">
+          <div className="mx-auto grid max-w-md grid-cols-5 gap-1 px-2 pb-[calc(0.45rem+env(safe-area-inset-bottom))] pt-1.5 md:max-w-3xl md:px-3">
+            {roleBottomNavItems.map((item) => {
+              const Icon = item.icon;
+              const active = item.isActive(location.pathname);
+              return (
+                <NavLink
+                  key={`role-bottom-${item.id}`}
+                  to={item.to}
+                  className={`relative flex min-h-[3.9rem] flex-col items-center justify-center rounded-2xl px-1 pb-1 pt-1 text-center transition ${
+                    active
+                      ? 'bg-emerald-500/18 text-emerald-300'
+                      : 'text-white/60 hover:bg-white/[0.06] hover:text-white/85'
+                  }`}
+                  aria-label={item.label}
+                  title={item.label}
+                >
+                  <Icon size={17} />
+                  <span className="mt-1 text-[10px] font-semibold leading-none sm:text-[11px]">{item.label}</span>
+                  {active ? <span className="mt-1 h-1 w-5 rounded-full bg-emerald-400" /> : null}
+                </NavLink>
+              );
+            })}
+          </div>
+        </nav>
+      ) : null}
     </div>
   );
 }

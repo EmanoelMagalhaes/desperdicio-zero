@@ -127,8 +127,27 @@ export function getMobileBottomNavItems(session) {
 }
 
 export function getDrawerNavItems(session) {
+  const baseItems = getMobileBottomNavItems(session);
+
+  if (session) {
+    return [
+      ...baseItems,
+      {
+        id: 'panel',
+        to: session.role === 'admin' ? '/admin/dashboard' : session.role === 'consumer' ? '/ofertas' : '/app/dashboard',
+        label: 'Painel',
+        icon: Home,
+        isActive: (pathname) =>
+          startsWithPath(pathname, '/admin') ||
+          startsWithPath(pathname, '/app') ||
+          startsWithPath(pathname, '/restaurante') ||
+          startsWithPath(pathname, '/meus-pedidos'),
+      },
+    ];
+  }
+
   return [
-    ...getMobileBottomNavItems(session),
+    ...baseItems,
     {
       id: 'inventory',
       to: '/demo/kitchen',
