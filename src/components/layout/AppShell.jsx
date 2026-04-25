@@ -84,7 +84,7 @@ export default function AppShell({
   return (
     <div className="min-h-screen bg-neutral-950 text-white">
       <div className="flex min-h-screen">
-        <aside className="hidden w-72 flex-col border-r border-white/10 bg-neutral-950/90 lg:flex">
+        <aside className="hidden w-72 flex-col border-r border-white/10 bg-neutral-950/90 xl:flex">
           <div className="border-b border-white/10 p-6">
             <div className="text-2xl font-black tracking-tight">Desperdicio Zero</div>
             <div className="mt-1 text-sm text-emerald-300">Cozinha Inteligente</div>
@@ -148,7 +148,7 @@ export default function AppShell({
         </aside>
 
         <div className="flex-1">
-          <header className="fixed left-0 right-0 top-0 z-30 border-b border-white/10 bg-neutral-950/95 backdrop-blur lg:left-72">
+          <header className="fixed left-0 right-0 top-0 z-30 border-b border-white/10 bg-neutral-950/95 backdrop-blur xl:left-72">
             <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-4 md:px-6">
               <div className="min-w-0">
                 <div className="text-base font-bold sm:text-lg">Desperdicio Zero</div>
@@ -158,7 +158,7 @@ export default function AppShell({
               <div className="flex items-center gap-2 sm:gap-3">
                 <button
                   onClick={() => setDrawerOpen(true)}
-                  className="inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.03] text-white/85 transition hover:bg-white/[0.08] lg:hidden"
+                  className="inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.03] text-white/85 transition hover:bg-white/[0.08] xl:hidden"
                   aria-label="Abrir menu do painel"
                   title="Menu"
                 >
@@ -222,10 +222,10 @@ export default function AppShell({
             className={`mx-auto max-w-7xl px-4 py-6 md:px-6 ${
               feedback.text
                 ? showRoleBottomNav
-                  ? 'pb-[6.5rem] pt-2 lg:pb-6'
+                  ? 'pb-[6.5rem] pt-2 xl:pb-6'
                   : 'pb-6 pt-2'
                 : showRoleBottomNav
-                  ? 'pb-[6.5rem] pt-[6.6rem] md:pt-[5.7rem] lg:pb-6'
+                  ? 'pb-[6.5rem] pt-[6.6rem] md:pt-[5.7rem] xl:pb-6'
                   : 'pb-6 pt-[6.6rem] md:pt-[5.7rem]'
             }`}
           >
@@ -235,7 +235,7 @@ export default function AppShell({
       </div>
 
       <div
-        className={`fixed inset-0 z-40 bg-black/70 transition lg:hidden ${
+        className={`fixed inset-0 z-40 bg-black/70 transition xl:hidden ${
           drawerOpen ? 'opacity-100' : 'pointer-events-none opacity-0'
         }`}
         onClick={() => setDrawerOpen(false)}
@@ -243,7 +243,7 @@ export default function AppShell({
       />
 
       <aside
-        className={`fixed right-0 top-0 z-50 h-screen w-[86vw] max-w-sm border-l border-white/10 bg-neutral-950 p-5 shadow-2xl shadow-black/60 transition-transform lg:hidden ${
+        className={`fixed right-0 top-0 z-50 h-screen w-[86vw] max-w-sm border-l border-white/10 bg-neutral-950 p-5 shadow-2xl shadow-black/60 transition-transform xl:hidden ${
           drawerOpen ? 'translate-x-0' : 'translate-x-full'
         }`}
         aria-hidden={!drawerOpen}
@@ -295,7 +295,7 @@ export default function AppShell({
       </aside>
 
       {showRoleBottomNav ? (
-        <nav className="fixed inset-x-0 bottom-0 z-30 border-t border-white/10 bg-neutral-950/95 backdrop-blur lg:hidden">
+        <nav className="fixed inset-x-0 bottom-0 z-30 border-t border-white/10 bg-neutral-950/95 backdrop-blur xl:hidden">
           <div className="mx-auto grid max-w-md grid-cols-5 gap-1 px-2 pb-[calc(0.45rem+env(safe-area-inset-bottom))] pt-1.5 md:max-w-3xl md:px-3">
             {roleBottomNavItems.map((item) => {
               const Icon = item.icon;

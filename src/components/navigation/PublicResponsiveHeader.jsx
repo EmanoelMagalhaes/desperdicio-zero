@@ -59,7 +59,7 @@ export default function PublicResponsiveHeader({
             <div className="truncate text-xs text-emerald-300 sm:text-sm">{siteTagline}</div>
           </Link>
 
-          <nav className="hidden items-center gap-2 lg:flex">
+          <nav className="hidden items-center gap-2 xl:flex">
             {desktopNavItems.map((item) => {
               const Icon = item.icon;
               const active = item.isActive(pathname);
@@ -83,7 +83,7 @@ export default function PublicResponsiveHeader({
           <div className="flex items-center gap-2 sm:gap-3">
             <button
               onClick={() => setDrawerOpen(true)}
-              className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-white/10 bg-neutral-900 text-white/90 transition hover:bg-neutral-800 lg:hidden"
+              className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-white/10 bg-neutral-900 text-white/90 transition hover:bg-neutral-800 xl:hidden"
               aria-label="Abrir menu principal"
               title="Menu"
             >
@@ -91,7 +91,7 @@ export default function PublicResponsiveHeader({
             </button>
 
             {session?.role === 'consumer' ? (
-              <div className="hidden items-center gap-2 lg:flex">
+              <div className="hidden items-center gap-2 xl:flex">
                 <Link
                   to="/pedido"
                   className="relative inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.03] text-white/85 transition hover:bg-white/[0.08]"
@@ -139,12 +139,12 @@ export default function PublicResponsiveHeader({
             ) : session ? (
               <button
                 onClick={onGoToPanel}
-                className="hidden rounded-2xl bg-emerald-500 px-4 py-2 text-sm font-semibold text-neutral-950 transition hover:scale-[1.02] lg:inline-flex"
+                className="hidden rounded-2xl bg-emerald-500 px-4 py-2 text-sm font-semibold text-neutral-950 transition hover:scale-[1.02] xl:inline-flex"
               >
                 Acessar painel
               </button>
             ) : (
-              <div className="hidden items-center gap-2 lg:flex">
+              <div className="hidden items-center gap-2 xl:flex">
                 <Link
                   to="/login"
                   className="rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-2 text-sm font-semibold text-white/85 transition hover:bg-white/[0.08]"
@@ -164,7 +164,7 @@ export default function PublicResponsiveHeader({
       </header>
 
       <div
-        className={`fixed inset-0 z-50 bg-black/75 transition lg:hidden ${
+        className={`fixed inset-0 z-50 bg-black/75 transition xl:hidden ${
           drawerOpen ? 'opacity-100' : 'pointer-events-none opacity-0'
         }`}
         onClick={() => setDrawerOpen(false)}
@@ -172,7 +172,7 @@ export default function PublicResponsiveHeader({
       />
 
       <aside
-        className={`fixed right-0 top-0 z-[60] h-screen w-[86vw] max-w-sm border-l border-white/15 bg-neutral-950 p-5 shadow-2xl shadow-black/60 transition-transform lg:hidden ${
+        className={`fixed right-0 top-0 z-[60] h-screen w-[86vw] max-w-sm border-l border-white/15 bg-neutral-950 p-5 shadow-2xl shadow-black/60 transition-transform xl:hidden ${
           drawerOpen ? 'translate-x-0' : 'translate-x-full'
         }`}
         aria-hidden={!drawerOpen}

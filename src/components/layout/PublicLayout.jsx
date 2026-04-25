@@ -39,7 +39,7 @@ export default function PublicLayout() {
         onLogout={handleLogout}
       />
 
-      <main className="mx-auto max-w-7xl px-4 pb-[calc(5.5rem+env(safe-area-inset-bottom))] pt-[5.8rem] md:px-6 md:pb-[calc(5.8rem+env(safe-area-inset-bottom))] md:pt-[6.2rem] lg:pb-8 lg:pt-[6.2rem]">
+      <main className="mx-auto max-w-7xl px-4 pb-[calc(5.5rem+env(safe-area-inset-bottom))] pt-[5.8rem] md:px-6 md:pb-[calc(5.8rem+env(safe-area-inset-bottom))] md:pt-[6.2rem] lg:pb-[calc(6rem+env(safe-area-inset-bottom))] lg:pt-[6.2rem] xl:pb-8">
         <Outlet />
       </main>
 
