@@ -94,6 +94,33 @@ export default function LandingPage() {
       </section>
 
       <section className="rounded-[30px] border border-white/10 bg-white/[0.04] p-6">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <div className="text-sm uppercase tracking-[0.22em] text-emerald-300">Ofertas em destaque</div>
+            <h2 className="mt-2 text-2xl font-black">Produtos prontos para venda imediata</h2>
+          </div>
+          <Link
+            to="/ofertas"
+            className="rounded-2xl border border-white/10 px-4 py-2 text-sm font-semibold text-white/80 transition hover:bg-white/[0.08]"
+          >
+            Ver todas
+          </Link>
+        </div>
+
+        {!featuredOffers.length ? (
+          <div className="mt-5 rounded-2xl border border-white/10 bg-white/[0.04] p-6 text-white/65">
+            Nenhuma oferta ativa no momento.
+          </div>
+        ) : (
+          <div className="mt-6 grid gap-6 md:grid-cols-2 xl:grid-cols-4">
+            {featuredOffers.map((offer) => (
+              <OfferCard key={offer.id} offer={offer} />
+            ))}
+          </div>
+        )}
+      </section>
+
+      <section className="rounded-[30px] border border-white/10 bg-white/[0.04] p-6">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
             <div className="text-sm uppercase tracking-[0.22em] text-emerald-300">Patrocinado</div>
@@ -245,33 +272,6 @@ export default function LandingPage() {
             );
           })}
         </div>
-      </section>
-
-      <section className="rounded-[30px] border border-white/10 bg-white/[0.04] p-6">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <div className="text-sm uppercase tracking-[0.22em] text-emerald-300">Ofertas em destaque</div>
-            <h2 className="mt-2 text-2xl font-black">Produtos prontos para venda imediata</h2>
-          </div>
-          <Link
-            to="/ofertas"
-            className="rounded-2xl border border-white/10 px-4 py-2 text-sm font-semibold text-white/80 transition hover:bg-white/[0.08]"
-          >
-            Ver todas
-          </Link>
-        </div>
-
-        {!featuredOffers.length ? (
-          <div className="mt-5 rounded-2xl border border-white/10 bg-white/[0.04] p-6 text-white/65">
-            Nenhuma oferta ativa no momento.
-          </div>
-        ) : (
-          <div className="mt-6 grid gap-6 md:grid-cols-2 xl:grid-cols-4">
-            {featuredOffers.map((offer) => (
-              <OfferCard key={offer.id} offer={offer} />
-            ))}
-          </div>
-        )}
       </section>
 
       <section className="rounded-[30px] border border-white/10 bg-white/[0.04] p-6">
